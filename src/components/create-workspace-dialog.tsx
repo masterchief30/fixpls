@@ -74,7 +74,7 @@ export function CreateWorkspaceDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="border-white/15 bg-zinc-800/95 backdrop-blur-md sm:max-w-md">
         <form onSubmit={handleCreate}>
           <DialogHeader>
             <DialogTitle>Create workspace</DialogTitle>

@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { AppShell } from "@/components/app-shell";
 import { WorkspaceClient } from "@/components/workspace-detail/workspace-client";
 import { Category, ItemWithDetails, Profile, WorkspaceMember } from "@/lib/types";
 
@@ -56,12 +57,7 @@ export default async function WorkspacePage({ params }: PageProps) {
     .eq("workspace_id", id);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="flex h-14 items-center border-b px-6">
-        <a href="/workspaces" className="text-sm font-medium hover:underline">
-          plsfix
-        </a>
-      </header>
+    <AppShell backHref="/workspaces">
       <WorkspaceClient
         workspaceId={id}
         initialCategories={(categories ?? []) as unknown as Category[]}
@@ -69,6 +65,6 @@ export default async function WorkspacePage({ params }: PageProps) {
         initialMembers={(members ?? []) as unknown as (WorkspaceMember & { profile: Profile | null })[]}
         userRole={(membership as { role: string }).role as "admin" | "member"}
       />
-    </div>
+    </AppShell>
   );
 }

@@ -16,32 +16,49 @@ export function WorkspacesList({ workspaces }: WorkspacesListProps) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">Workspaces</h1>
-        <Button size="sm" onClick={() => setOpen(true)}>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-100">
+            Workspaces
+          </h1>
+          <p className="mt-1 text-sm text-zinc-400">
+            Manage feedback and bugs with your clients.
+          </p>
+        </div>
+        <Button size="sm" className="h-9 px-3" onClick={() => setOpen(true)}>
           <Plus className="mr-1 h-4 w-4" />
           New workspace
         </Button>
       </div>
 
       {workspaces.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-16">
-          <p className="text-sm text-muted-foreground">No workspaces yet.</p>
-          <Button variant="link" onClick={() => setOpen(true)}>
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 bg-zinc-800/40 py-20">
+          <p className="text-sm text-zinc-400">No workspaces yet.</p>
+          <Button
+            variant="link"
+            className="mt-2 cursor-pointer text-zinc-200 hover:text-white"
+            onClick={() => setOpen(true)}
+          >
             Create your first workspace
           </Button>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {workspaces.map((ws) => (
-            <Link key={ws.id} href={`/workspaces/${ws.id}`}>
-              <Card className="transition-colors hover:bg-muted/50">
+            <Link
+              key={ws.id}
+              href={`/workspaces/${ws.id}`}
+              className="group cursor-pointer"
+            >
+              <Card className="h-full border-white/10 bg-zinc-800/55 transition-all duration-200 ease-out group-hover:-translate-y-1 group-hover:border-white/20 group-hover:bg-zinc-800/75 group-hover:shadow-[0_16px_40px_-24px_rgba(0,0,0,0.8)]">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">{ws.name}</CardTitle>
+                  <CardTitle className="text-base text-zinc-100">
+                    {ws.name}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-xs text-muted-foreground capitalize">
+                  <p className="text-xs capitalize text-zinc-400">
                     {ws.user_role}
                   </p>
                 </CardContent>

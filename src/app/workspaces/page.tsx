@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { AppShell } from "@/components/app-shell";
 import { WorkspacesList } from "@/components/workspaces-list";
 
 export default async function WorkspacesPage() {
@@ -36,13 +37,8 @@ export default async function WorkspacesPage() {
   }) ?? [];
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="flex h-14 items-center border-b px-6">
-        <span className="text-sm font-medium">plsfix</span>
-      </header>
-      <main className="flex-1 p-6">
-        <WorkspacesList workspaces={formatted} />
-      </main>
-    </div>
+    <AppShell>
+      <WorkspacesList workspaces={formatted} />
+    </AppShell>
   );
 }

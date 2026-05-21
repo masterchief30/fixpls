@@ -1,13 +1,6 @@
--- Enable RLS on all tables
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.activity_log ENABLE ROW LEVEL SECURITY;
+-- Fix infinite recursion in workspace_members RLS policies.
+-- Run this in Supabase SQL Editor if you already applied 0002_rls_policies.sql.
 
--- Helper functions (SECURITY DEFINER avoids RLS recursion on workspace_members)
 CREATE OR REPLACE FUNCTION public.is_workspace_member(p_workspace_id uuid)
 RETURNS boolean
 LANGUAGE sql
@@ -42,13 +35,7 @@ $$;
 GRANT EXECUTE ON FUNCTION public.is_workspace_member(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_workspace_admin(uuid) TO authenticated;
 
--- Profiles: users can read all profiles (needed for assignee display)
-DROP POLICY IF EXISTS "Profiles are viewable by everyone" ON public.profiles;
-CREATE POLICY "Profiles are viewable by everyone"
-  ON public.profiles FOR SELECT
-  USING (true);
-
--- Workspaces: visible if member
+-- Workspaces
 DROP POLICY IF EXISTS "Workspaces viewable by members" ON public.workspaces;
 CREATE POLICY "Workspaces viewable by members"
   ON public.workspaces FOR SELECT
@@ -57,12 +44,7 @@ CREATE POLICY "Workspaces viewable by members"
     OR created_by = auth.uid()
   );
 
-DROP POLICY IF EXISTS "Workspaces insertable by authenticated users" ON public.workspaces;
-CREATE POLICY "Workspaces insertable by authenticated users"
-  ON public.workspaces FOR INSERT
-  WITH CHECK (auth.uid() = created_by);
-
--- Workspace members: visible if member of same workspace
+-- Workspace members
 DROP POLICY IF EXISTS "Workspace members viewable by members" ON public.workspace_members;
 CREATE POLICY "Workspace members viewable by members"
   ON public.workspace_members FOR SELECT
@@ -92,7 +74,7 @@ CREATE POLICY "Workspace members deletable by admins"
   ON public.workspace_members FOR DELETE
   USING (public.is_workspace_admin(workspace_id));
 
--- Categories: visible if workspace member, manageable by admins
+-- Categories
 DROP POLICY IF EXISTS "Categories viewable by workspace members" ON public.categories;
 CREATE POLICY "Categories viewable by workspace members"
   ON public.categories FOR SELECT
@@ -113,7 +95,7 @@ CREATE POLICY "Categories deletable by admins"
   ON public.categories FOR DELETE
   USING (public.is_workspace_admin(workspace_id));
 
--- Items: visible if workspace member, insert/update by members, delete by admins
+-- Items
 DROP POLICY IF EXISTS "Items viewable by workspace members" ON public.items;
 CREATE POLICY "Items viewable by workspace members"
   ON public.items FOR SELECT
@@ -134,7 +116,7 @@ CREATE POLICY "Items deletable by admins"
   ON public.items FOR DELETE
   USING (public.is_workspace_admin(workspace_id));
 
--- Comments: visible if workspace member (via item), insert by members, delete by author or admin
+-- Comments
 DROP POLICY IF EXISTS "Comments viewable by workspace members" ON public.comments;
 CREATE POLICY "Comments viewable by workspace members"
   ON public.comments FOR SELECT
@@ -172,7 +154,7 @@ CREATE POLICY "Comments deletable by author or admin"
     )
   );
 
--- Activity log: visible if workspace member, insert by members (system writes)
+-- Activity log
 DROP POLICY IF EXISTS "Activity log viewable by workspace members" ON public.activity_log;
 CREATE POLICY "Activity log viewable by workspace members"
   ON public.activity_log FOR SELECT
