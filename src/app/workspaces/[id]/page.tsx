@@ -38,12 +38,6 @@ export default async function WorkspacePage({ params }: PageProps) {
     notFound();
   }
 
-  const { data: workspace } = await supabase
-    .from("workspaces")
-    .select("id, name, default_owner_company_id")
-    .eq("id", id)
-    .single();
-
   const { data: categories } = await supabase
     .from("categories")
     .select("*")
@@ -101,8 +95,6 @@ export default async function WorkspacePage({ params }: PageProps) {
     <AppShell backHref="/workspaces" flush>
       <WorkspaceClient
         workspaceId={id}
-        workspaceName={workspace?.name ?? "Workspace"}
-        workspaceDefaultOwnerCompanyId={workspace?.default_owner_company_id ?? null}
         initialCategories={(categories ?? []) as unknown as Category[]}
         initialCompanies={(companies ?? []) as unknown as Company[]}
         initialComponents={(components ?? []) as unknown as Component[]}

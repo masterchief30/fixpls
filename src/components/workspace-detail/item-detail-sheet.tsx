@@ -44,7 +44,6 @@ interface ItemDetailSheetProps {
   statuses: Status[];
   companies: Company[];
   members: (WorkspaceMember & { profile: Profile | null })[];
-  defaultOwnerCompanyId: string | null;
   onUpdated: () => void;
 }
 
@@ -57,7 +56,6 @@ export function ItemDetailSheet({
   statuses,
   companies,
   members,
-  defaultOwnerCompanyId,
   onUpdated,
 }: ItemDetailSheetProps) {
   const supabase = createClient();
@@ -69,11 +67,19 @@ export function ItemDetailSheet({
   const [categoryValue, setCategoryValue] = useState<string>("none");
   const [componentValue, setComponentValue] = useState<string>("none");
   const [assigneeValue, setAssigneeValue] = useState<string>("none");
-  const [ownerCompanyValue, setOwnerCompanyValue] = useState<string>("default");
+  const [ownerCompanyValue, setOwnerCompanyValue] = useState<string>("none");
   const [reporterName, setReporterName] = useState("");
   const [reporterEmail, setReporterEmail] = useState("");
   const [reporterSource, setReporterSource] =
     useState<(typeof REPORTER_SOURCES)[number]>("Client");
+  const uniqueMembers = useMemo(
+    () =>
+      members.filter(
+        (member, index, all) =>
+          all.findIndex((candidate) => candidate.user_id === member.user_id) === index
+      ),
+    [members]
+  );
 
   const thread: ThreadEntry[] = useMemo(() => {
     const entries: ThreadEntry[] = [
@@ -95,6 +101,24 @@ export function ItemDetailSheet({
     }
     return base;
   }, [statuses, item?.status]);
+  const selectedCategoryLabel =
+    categoryValue === "none"
+      ? "None"
+      : categories.find((category) => category.id === categoryValue)?.name ?? "None";
+  const selectedComponentLabel =
+    componentValue === "none"
+      ? "None"
+      : components.find((component) => component.id === componentValue)?.name ?? "None";
+  const selectedOwnerLabel =
+    ownerCompanyValue === "none"
+      ? "None"
+      : companies.find((company) => company.id === ownerCompanyValue)?.name ?? "None";
+  const selectedAssigneeLabel =
+    assigneeValue === "none"
+      ? "Unassigned"
+      : uniqueMembers.find((member) => member.user_id === assigneeValue)?.profile?.full_name ??
+        uniqueMembers.find((member) => member.user_id === assigneeValue)?.profile?.email ??
+        "Workspace member";
 
   const fetchComments = useCallback(async () => {
     if (!item) return;
@@ -124,7 +148,7 @@ export function ItemDetailSheet({
       setCategoryValue(item.category_id ?? "none");
       setComponentValue(item.component_id ?? "none");
       setAssigneeValue(item.assignee_id ?? "none");
-      setOwnerCompanyValue(item.owner_company_id ?? "default");
+      setOwnerCompanyValue(item.owner_company_id ?? "none");
       setReporterName(item.reporter_name ?? "");
       setReporterEmail(item.reporter_email ?? "");
       setReporterSource(
@@ -132,6 +156,42 @@ export function ItemDetailSheet({
       );
     }
   }, [item?.id, item]);
+
+  useEffect(() => {
+    if (
+      categoryValue !== "none" &&
+      !categories.some((category) => category.id === categoryValue)
+    ) {
+      setCategoryValue("none");
+    }
+  }, [categoryValue, categories]);
+
+  useEffect(() => {
+    if (
+      componentValue !== "none" &&
+      !components.some((component) => component.id === componentValue)
+    ) {
+      setComponentValue("none");
+    }
+  }, [componentValue, components]);
+
+  useEffect(() => {
+    if (
+      ownerCompanyValue !== "none" &&
+      !companies.some((company) => company.id === ownerCompanyValue)
+    ) {
+      setOwnerCompanyValue("none");
+    }
+  }, [ownerCompanyValue, companies]);
+
+  useEffect(() => {
+    if (
+      assigneeValue !== "none" &&
+      !uniqueMembers.some((member) => member.user_id === assigneeValue)
+    ) {
+      setAssigneeValue("none");
+    }
+  }, [assigneeValue, uniqueMembers]);
 
   useEffect(() => {
     if (item) {
@@ -252,16 +312,12 @@ export function ItemDetailSheet({
 
   const handleOwnerCompanyChange = async (newOwnerCompanyId: string) => {
     if (!item) return;
-    const nextOwnerCompanyId = newOwnerCompanyId === "default" ? null : newOwnerCompanyId;
+    const nextOwnerCompanyId = newOwnerCompanyId === "none" ? null : newOwnerCompanyId;
     if (nextOwnerCompanyId === item.owner_company_id) return;
-    const oldName =
-      item.owner_company?.name ??
-      (defaultOwnerCompanyId ? "Workspace default" : "None");
+    const oldName = item.owner_company?.name ?? "None";
     const newName =
-      newOwnerCompanyId === "default"
-        ? defaultOwnerCompanyId
-          ? "Workspace default"
-          : "None"
+      newOwnerCompanyId === "none"
+        ? "None"
         : companies.find((company) => company.id === newOwnerCompanyId)?.name ?? "None";
     await updateItem({
       owner_company_id: nextOwnerCompanyId,
@@ -340,7 +396,7 @@ export function ItemDetailSheet({
                     handleStatusChange(value);
                   }}
                 >
-                  <SelectTrigger className="h-7 text-xs">
+                  <SelectTrigger className="h-7 w-36 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -362,8 +418,8 @@ export function ItemDetailSheet({
                     handleCategoryChange(value);
                   }}
                 >
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="None" />
+                  <SelectTrigger className="h-7 w-36 text-xs">
+                    <span className="truncate">{selectedCategoryLabel}</span>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
@@ -376,7 +432,7 @@ export function ItemDetailSheet({
                 </Select>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Component</span>
+                <span className="text-xs text-muted-foreground">Menu Component</span>
                 <Select
                   value={componentValue}
                   onValueChange={(v) => {
@@ -385,8 +441,8 @@ export function ItemDetailSheet({
                     handleComponentChange(value);
                   }}
                 >
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="None" />
+                  <SelectTrigger className="h-7 w-40 text-xs">
+                    <span className="truncate">{selectedComponentLabel}</span>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">None</SelectItem>
@@ -408,14 +464,14 @@ export function ItemDetailSheet({
                     handleAssigneeChange(value);
                   }}
                 >
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="Unassigned" />
+                  <SelectTrigger className="h-7 w-40 text-xs">
+                    <span className="truncate">{selectedAssigneeLabel}</span>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">Unassigned</SelectItem>
-                    {members.map((m) => (
+                    {uniqueMembers.map((m) => (
                       <SelectItem key={m.user_id} value={m.user_id}>
-                        {m.profile?.full_name ?? m.profile?.email ?? m.user_id.slice(0, 8)}
+                        {m.profile?.full_name ?? m.profile?.email ?? "Workspace member"}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -426,16 +482,16 @@ export function ItemDetailSheet({
                 <Select
                   value={ownerCompanyValue}
                   onValueChange={(v) => {
-                    const value = v ?? "default";
+                    const value = v ?? "none";
                     setOwnerCompanyValue(value);
                     handleOwnerCompanyChange(value);
                   }}
                 >
-                  <SelectTrigger className="h-7 text-xs">
-                    <SelectValue placeholder="Workspace default" />
+                  <SelectTrigger className="h-7 w-44 text-xs">
+                    <span className="truncate">{selectedOwnerLabel}</span>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="default">Workspace default</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {companies.map((company) => (
                       <SelectItem key={company.id} value={company.id}>
                         {company.name}

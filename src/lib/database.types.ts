@@ -243,6 +243,46 @@ export interface Database {
           updated_at?: string;
         };
       };
+      item_component_links: {
+        Row: {
+          item_id: string;
+          workspace_id: string;
+          component_id: string;
+          created_at: string;
+        };
+        Insert: {
+          item_id: string;
+          workspace_id: string;
+          component_id: string;
+          created_at?: string;
+        };
+        Update: {
+          item_id?: string;
+          workspace_id?: string;
+          component_id?: string;
+          created_at?: string;
+        };
+      };
+      item_owner_company_links: {
+        Row: {
+          item_id: string;
+          workspace_id: string;
+          company_id: string;
+          created_at: string;
+        };
+        Insert: {
+          item_id: string;
+          workspace_id: string;
+          company_id: string;
+          created_at?: string;
+        };
+        Update: {
+          item_id?: string;
+          workspace_id?: string;
+          company_id?: string;
+          created_at?: string;
+        };
+      };
       comments: {
         Row: {
           id: string;
@@ -327,6 +367,7 @@ export interface Database {
           id: string;
           workspace_id: string;
           email: string;
+          invited_name: string | null;
           role: "admin" | "member";
           company_id: string | null;
           invited_by: string | null;
@@ -340,6 +381,7 @@ export interface Database {
           id?: string;
           workspace_id: string;
           email: string;
+          invited_name?: string | null;
           role?: "admin" | "member";
           company_id?: string | null;
           invited_by?: string | null;
@@ -353,6 +395,7 @@ export interface Database {
           id?: string;
           workspace_id?: string;
           email?: string;
+          invited_name?: string | null;
           role?: "admin" | "member";
           company_id?: string | null;
           invited_by?: string | null;

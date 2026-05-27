@@ -127,6 +127,14 @@ function seed() {
   setTable("activity_log", []);
   setTable("workspace_invites", []);
   setTable("company_domains", []);
+  setTable("item_component_links", [
+    { item_id: item1, workspace_id: wsId, component_id: comp1, created_at: new Date().toISOString() },
+    { item_id: item2, workspace_id: wsId, component_id: comp2, created_at: new Date().toISOString() },
+  ]);
+  setTable("item_owner_company_links", [
+    { item_id: item1, workspace_id: wsId, company_id: company1, created_at: new Date().toISOString() },
+    { item_id: item2, workspace_id: wsId, company_id: company2, created_at: new Date().toISOString() },
+  ]);
 
   if (typeof window !== "undefined") {
     localStorage.setItem("plsfix_demo_seeded", "true");

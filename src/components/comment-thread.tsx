@@ -74,7 +74,7 @@ export function CommentThread({ thread, onAddComment }: CommentThreadProps) {
               message = `changed category from ${a.from_value ?? "—"} → ${a.to_value ?? "—"}`;
               break;
             case "component_change":
-              message = `changed component from ${a.from_value ?? "—"} → ${a.to_value ?? "—"}`;
+              message = `changed menu component from ${a.from_value ?? "—"} → ${a.to_value ?? "—"}`;
               break;
             case "owner_company_change":
               message = `changed owner company from ${a.from_value ?? "—"} → ${a.to_value ?? "—"}`;

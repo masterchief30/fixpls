@@ -66,81 +66,119 @@ export function ItemFilters({
     : DEFAULT_ITEM_STATUSES;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Input
-        placeholder="Search items..."
-        value={searchQuery}
-        onChange={(e) => onSearchChange(e.target.value)}
-        className="h-8 w-48 text-sm"
-      />
-      <Select value={statusFilter} onValueChange={(v) => onStatusChange((v as ItemStatus | "all") ?? "all")}>
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All statuses</SelectItem>
-          {statusOptions.map((s) => (
-            <SelectItem key={s} value={s}>
-              {s}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={categoryFilter} onValueChange={(v) => onCategoryChange(v ?? "all")}>
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="Category" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All categories</SelectItem>
-          {categories.map((c) => (
-            <SelectItem key={c.id} value={c.id}>
-              {c.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={componentFilter} onValueChange={(v) => onComponentChange(v ?? "all")}>
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="Component" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All components</SelectItem>
-          {components.map((component) => (
-            <SelectItem key={component.id} value={component.id}>
-              {component.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select value={assigneeFilter} onValueChange={(v) => onAssigneeChange(v ?? "all")}>
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="Assignee" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All assignees</SelectItem>
-          {members.map((m) => (
-            <SelectItem key={m.user_id} value={m.user_id}>
-              {m.profile?.full_name ?? m.profile?.email ?? m.user_id.slice(0, 8)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select
-        value={ownerCompanyFilter}
-        onValueChange={(v) => onOwnerCompanyChange(v ?? "all")}
-      >
-        <SelectTrigger className="h-8 w-36 text-xs">
-          <SelectValue placeholder="Owner company" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All owner companies</SelectItem>
-          {companies.map((company) => (
-            <SelectItem key={company.id} value={company.id}>
-              {company.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-col gap-1">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Search
+        </span>
+        <Input
+          placeholder="Search items..."
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="h-9 w-40 text-sm"
+        />
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Status
+        </span>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => onStatusChange((v as ItemStatus | "all") ?? "all")}
+        >
+          <SelectTrigger className="h-9 w-44 text-sm">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent className="min-w-44">
+            <SelectItem value="all">all</SelectItem>
+            {statusOptions.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Category
+        </span>
+        <Select value={categoryFilter} onValueChange={(v) => onCategoryChange(v ?? "all")}>
+          <SelectTrigger className="h-9 w-44 text-sm">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent className="min-w-44">
+            <SelectItem value="all">all</SelectItem>
+            {categories.map((c) => (
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Menu Component
+        </span>
+        <Select value={componentFilter} onValueChange={(v) => onComponentChange(v ?? "all")}>
+          <SelectTrigger className="h-9 w-44 text-sm">
+            <SelectValue placeholder="Menu Component" />
+          </SelectTrigger>
+          <SelectContent className="min-w-44">
+            <SelectItem value="all">all</SelectItem>
+            {components.map((component) => (
+              <SelectItem key={component.id} value={component.id}>
+                {component.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Assignee
+        </span>
+        <Select value={assigneeFilter} onValueChange={(v) => onAssigneeChange(v ?? "all")}>
+          <SelectTrigger className="h-9 w-44 text-sm">
+            <SelectValue placeholder="Assignee" />
+          </SelectTrigger>
+          <SelectContent className="min-w-44">
+            <SelectItem value="all">all</SelectItem>
+            {members.map((m) => (
+              <SelectItem key={m.user_id} value={m.user_id}>
+                {m.profile?.full_name ?? m.profile?.email ?? m.user_id.slice(0, 8)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-1">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Owner
+        </span>
+        <Select
+          value={ownerCompanyFilter}
+          onValueChange={(v) => onOwnerCompanyChange(v ?? "all")}
+        >
+          <SelectTrigger className="h-9 w-44 text-sm">
+            <SelectValue placeholder="Owner company" />
+          </SelectTrigger>
+          <SelectContent className="min-w-44">
+            <SelectItem value="all">all</SelectItem>
+            {companies.map((company) => (
+              <SelectItem key={company.id} value={company.id}>
+                {company.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   );
 }

@@ -10,6 +10,8 @@ import { ItemDetailSheet } from "./item-detail-sheet";
 import { InviteMembersDialog } from "./invite-members-dialog";
 import { ManageComponentsDialog } from "./manage-components-dialog";
 import { ManageStatusesDialog } from "./manage-statuses-dialog";
+import { ManageCategoriesDialog } from "./manage-categories-dialog";
+import { ManageCompaniesDialog } from "./manage-companies-dialog";
 import {
   Category,
   Company,
@@ -24,8 +26,6 @@ import {
 
 interface WorkspaceClientProps {
   workspaceId: string;
-  workspaceName: string;
-  workspaceDefaultOwnerCompanyId: string | null;
   initialCategories: Category[];
   initialCompanies: Company[];
   initialComponents: Component[];
@@ -38,8 +38,6 @@ interface WorkspaceClientProps {
 
 export function WorkspaceClient({
   workspaceId,
-  workspaceName,
-  workspaceDefaultOwnerCompanyId,
   initialCategories,
   initialCompanies,
   initialComponents,
@@ -58,9 +56,6 @@ export function WorkspaceClient({
   const [companyDomains, setCompanyDomains] = useState<CompanyDomain[]>(
     initialCompanyDomains
   );
-  const [defaultOwnerCompanyId, setDefaultOwnerCompanyId] = useState<string | null>(
-    workspaceDefaultOwnerCompanyId
-  );
   const [items, setItems] = useState<ItemWithDetails[]>(initialItems);
   const [members] = useState<(WorkspaceMember & { profile: Profile | null })[]>(
     initialMembers
@@ -75,8 +70,9 @@ export function WorkspaceClient({
 
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [addCategoryRequestId, setAddCategoryRequestId] = useState(0);
+  const [categoriesDialogOpen, setCategoriesDialogOpen] = useState(false);
   const [componentsDialogOpen, setComponentsDialogOpen] = useState(false);
+  const [companiesDialogOpen, setCompaniesDialogOpen] = useState(false);
   const [statusesDialogOpen, setStatusesDialogOpen] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
 
@@ -86,8 +82,7 @@ export function WorkspaceClient({
       if (categoryFilter !== "all" && item.category_id !== categoryFilter) return false;
       if (componentFilter !== "all" && item.component_id !== componentFilter) return false;
       if (assigneeFilter !== "all" && item.assignee_id !== assigneeFilter) return false;
-      const effectiveOwnerCompanyId = item.owner_company_id ?? defaultOwnerCompanyId;
-      if (ownerCompanyFilter !== "all" && effectiveOwnerCompanyId !== ownerCompanyFilter) {
+      if (ownerCompanyFilter !== "all" && item.owner_company_id !== ownerCompanyFilter) {
         return false;
       }
       if (searchQuery && !item.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -100,7 +95,6 @@ export function WorkspaceClient({
     componentFilter,
     assigneeFilter,
     ownerCompanyFilter,
-    defaultOwnerCompanyId,
     searchQuery,
   ]);
 
@@ -172,17 +166,6 @@ export function WorkspaceClient({
     if (data) setCompanyDomains(data);
   }, [supabase, workspaceId]);
 
-  const fetchWorkspaceMeta = useCallback(async () => {
-    const { data } = await supabase
-      .from("workspaces")
-      .select("default_owner_company_id")
-      .eq("id", workspaceId)
-      .single();
-    if (data) {
-      setDefaultOwnerCompanyId(data.default_owner_company_id);
-    }
-  }, [supabase, workspaceId]);
-
   useEffect(() => {
     const channel = supabase
       .channel(`workspace-${workspaceId}`)
@@ -201,7 +184,6 @@ export function WorkspaceClient({
         { event: "*", schema: "public", table: "companies", filter: `workspace_id=eq.${workspaceId}` },
         () => {
           fetchCompanies();
-          fetchWorkspaceMeta();
           fetchItems();
         }
       )
@@ -240,7 +222,6 @@ export function WorkspaceClient({
     fetchComponents,
     fetchStatuses,
     fetchCompanyDomains,
-    fetchWorkspaceMeta,
   ]);
 
   useEffect(() => {
@@ -251,44 +232,64 @@ export function WorkspaceClient({
     }
   }, [statuses, statusFilter]);
 
-  const handleDefaultOwnerCompanyChange = async (value: string) => {
-    const nextId = value === "none" ? null : value;
-    const { error } = await supabase
-      .from("workspaces")
-      .update({ default_owner_company_id: nextId })
-      .eq("id", workspaceId);
-    if (!error) {
-      setDefaultOwnerCompanyId(nextId);
-      fetchItems();
+  useEffect(() => {
+    if (ownerCompanyFilter === "all") return;
+    const validCompanyIds = new Set(companies.map((company) => company.id));
+    if (!validCompanyIds.has(ownerCompanyFilter)) {
+      setOwnerCompanyFilter("all");
     }
-  };
+  }, [companies, ownerCompanyFilter]);
+
+  useEffect(() => {
+    if (categoryFilter === "all") return;
+    const validCategoryIds = new Set(categories.map((category) => category.id));
+    if (!validCategoryIds.has(categoryFilter)) {
+      setCategoryFilter("all");
+    }
+  }, [categories, categoryFilter]);
+
+  useEffect(() => {
+    if (componentFilter === "all") return;
+    const validComponentIds = new Set(components.map((component) => component.id));
+    if (!validComponentIds.has(componentFilter)) {
+      setComponentFilter("all");
+    }
+  }, [components, componentFilter]);
+
+  useEffect(() => {
+    if (assigneeFilter === "all") return;
+    const validAssigneeIds = new Set(members.map((member) => member.user_id));
+    if (!validAssigneeIds.has(assigneeFilter)) {
+      setAssigneeFilter("all");
+    }
+  }, [members, assigneeFilter]);
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">
       <Sidebar
-        workspaceId={workspaceId}
-        categories={categories}
-        activeCategory={categoryFilter}
-        onCategoryChange={setCategoryFilter}
-        onCategoriesChange={fetchCategories}
         userRole={userRole}
         onNewItem={() => setCreateOpen(true)}
-        onNewCategory={() => setAddCategoryRequestId((prev) => prev + 1)}
-        onNewComponent={() => setComponentsDialogOpen(true)}
-        onNewStatus={() => setStatusesDialogOpen(true)}
+        onNewCategory={() => {
+          fetchCategories();
+          setCategoriesDialogOpen(true);
+        }}
+        onNewComponent={() => {
+          fetchComponents();
+          setComponentsDialogOpen(true);
+        }}
+        onNewCompany={() => {
+          fetchCompanies();
+          setCompaniesDialogOpen(true);
+        }}
+        onNewStatus={() => {
+          fetchStatuses();
+          setStatusesDialogOpen(true);
+        }}
         onInvite={() => setInviteDialogOpen(true)}
-        companies={companies}
-        defaultOwnerCompanyId={defaultOwnerCompanyId}
-        onDefaultOwnerChange={handleDefaultOwnerCompanyChange}
-        addCategoryRequestId={addCategoryRequestId}
-        showHeaderAddButton={false}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="flex items-center gap-2 border-b px-3 py-3">
-          <span className="shrink-0 text-xs font-medium text-muted-foreground">
-            {workspaceName}
-          </span>
-          <div className="ml-auto">
+        <div className="flex items-end gap-2 border-b border-white/10 bg-slate-900/40 px-3 py-3">
+          <div>
             <ItemFilters
               statusFilter={statusFilter}
               onStatusChange={setStatusFilter}
@@ -312,7 +313,6 @@ export function WorkspaceClient({
         </div>
         <ItemsTable
           items={filteredItems}
-          defaultOwnerCompanyId={defaultOwnerCompanyId}
           onItemClick={setSelectedItemId}
         />
       </div>
@@ -326,7 +326,6 @@ export function WorkspaceClient({
         statuses={statuses}
         companies={companies}
         members={members}
-        defaultOwnerCompanyId={defaultOwnerCompanyId}
         onCreated={fetchItems}
       />
 
@@ -339,7 +338,6 @@ export function WorkspaceClient({
         statuses={statuses}
         companies={companies}
         members={members}
-        defaultOwnerCompanyId={defaultOwnerCompanyId}
         onUpdated={fetchItems}
       />
 
@@ -349,6 +347,26 @@ export function WorkspaceClient({
         workspaceId={workspaceId}
         components={components}
         onChanged={fetchComponents}
+      />
+
+      <ManageCompaniesDialog
+        open={companiesDialogOpen}
+        onOpenChange={setCompaniesDialogOpen}
+        workspaceId={workspaceId}
+        companies={companies}
+        onChanged={() => {
+          fetchCompanies();
+          fetchCompanyDomains();
+          fetchItems();
+        }}
+      />
+
+      <ManageCategoriesDialog
+        open={categoriesDialogOpen}
+        onOpenChange={setCategoriesDialogOpen}
+        workspaceId={workspaceId}
+        categories={categories}
+        onChanged={fetchCategories}
       />
 
       <ManageStatusesDialog

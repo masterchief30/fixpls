@@ -35,6 +35,10 @@ export function ManageStatusesDialog({
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Status | null>(null);
+  const [confirmText, setConfirmText] = useState("");
+  const [confirmError, setConfirmError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,11 +68,28 @@ export function ManageStatusesDialog({
     onChanged();
   };
 
-  const handleDelete = async (status: Status) => {
+  const closeDeleteDialog = () => {
+    setDeleteTarget(null);
+    setConfirmText("");
+    setConfirmError(null);
+    setDeleteLoading(false);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    if (confirmText !== "DELETE") {
+      setConfirmError("Type DELETE exactly to confirm.");
+      return;
+    }
+    setDeleteLoading(true);
+    setConfirmError(null);
     setError(null);
 
     if (statuses.length <= 1) {
-      setError("At least one status must remain.");
+      const message = "At least one status must remain.";
+      setError(message);
+      setConfirmError(message);
+      setDeleteLoading(false);
       return;
     }
 
@@ -76,28 +97,36 @@ export function ManageStatusesDialog({
       .from("items")
       .select("id", { count: "exact", head: true })
       .eq("workspace_id", workspaceId)
-      .eq("status", status.name);
+      .eq("status", deleteTarget.name);
 
     if (countError) {
       setError(countError.message);
+      setConfirmError(countError.message);
+      setDeleteLoading(false);
       return;
     }
 
     if ((count ?? 0) > 0) {
-      setError(`Cannot delete "${status.name}" because it is used by existing items.`);
+      const message = `Cannot delete "${deleteTarget.name}" because it is used by existing items.`;
+      setError(message);
+      setConfirmError(message);
+      setDeleteLoading(false);
       return;
     }
 
     const { error: deleteError } = await supabase
       .from("statuses")
       .delete()
-      .eq("id", status.id);
+      .eq("id", deleteTarget.id);
 
     if (deleteError) {
       setError(deleteError.message);
+      setConfirmError(deleteError.message);
+      setDeleteLoading(false);
       return;
     }
 
+    closeDeleteDialog();
     onChanged();
   };
 
@@ -144,7 +173,11 @@ export function ManageStatusesDialog({
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
-                      onClick={() => handleDelete(status)}
+                      onClick={() => {
+                        setDeleteTarget(status);
+                        setConfirmText("");
+                        setConfirmError(null);
+                      }}
                       type="button"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -167,6 +200,52 @@ export function ManageStatusesDialog({
           </DialogFooter>
         </form>
       </DialogContent>
+
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            closeDeleteDialog();
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete status</DialogTitle>
+            <DialogDescription>
+              {deleteTarget
+                ? `Delete "${deleteTarget.name}" permanently.`
+                : "Delete status permanently."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <p className="text-sm text-muted-foreground">
+              Type <span className="font-semibold text-foreground">DELETE</span> to confirm.
+            </p>
+            <Label htmlFor="confirm-delete-status">Confirmation</Label>
+            <Input
+              id="confirm-delete-status"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="DELETE"
+            />
+            {confirmError && <p className="text-sm text-red-500">{confirmError}</p>}
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={closeDeleteDialog}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={!deleteTarget || confirmText !== "DELETE" || deleteLoading}
+            >
+              {deleteLoading ? "Deleting..." : "Delete status"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

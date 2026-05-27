@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getAuthCallbackUrl } from "@/lib/auth-redirect";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +16,7 @@ interface AuthFormProps {
 
 export function AuthForm({ mode, variant = "default" }: AuthFormProps) {
   const router = useRouter();
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,7 +38,10 @@ export function AuthForm({ mode, variant = "default" }: AuthFormProps) {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            emailRedirectTo: getAuthCallbackUrl(),
+            data: {
+              full_name: fullName.trim() || null,
+            },
           },
         });
         if (error) throw error;
@@ -91,6 +96,26 @@ export function AuthForm({ mode, variant = "default" }: AuthFormProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className={isCompact ? "space-y-3" : "space-y-4"}>
+          {mode === "signup" && (
+            <div className="space-y-2">
+              <Label htmlFor="full-name" className="text-zinc-200">
+                Name
+              </Label>
+              <Input
+                id="full-name"
+                type="text"
+                placeholder="Your name"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className={
+                  isCompact
+                    ? "h-10 border-white/15 bg-white/5 px-3 text-zinc-100 placeholder:text-zinc-400 focus-visible:border-white/35 focus-visible:ring-white/20"
+                    : "h-11 border-white/20 bg-white/5 px-3 text-zinc-100 placeholder:text-zinc-400 focus-visible:border-white/40 focus-visible:ring-white/20"
+                }
+                required
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-zinc-200">
               Email

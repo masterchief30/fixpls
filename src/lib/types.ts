@@ -10,6 +10,9 @@ export type CompanyDomain = Database["public"]["Tables"]["company_domains"]["Row
 export type WorkspaceInvite = Database["public"]["Tables"]["workspace_invites"]["Row"];
 export type Category = Database["public"]["Tables"]["categories"]["Row"];
 export type Item = Database["public"]["Tables"]["items"]["Row"];
+export type ItemComponentLink = Database["public"]["Tables"]["item_component_links"]["Row"];
+export type ItemOwnerCompanyLink =
+  Database["public"]["Tables"]["item_owner_company_links"]["Row"];
 export type Comment = Database["public"]["Tables"]["comments"]["Row"];
 export type ActivityLog = Database["public"]["Tables"]["activity_log"]["Row"];
 

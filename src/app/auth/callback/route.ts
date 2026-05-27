@@ -17,7 +17,7 @@ export async function GET(request: Request) {
       if (user?.email) {
         const { data: invites } = await supabase
           .from("workspace_invites")
-          .select("id, workspace_id, role, company_id, expires_at")
+          .select("id, workspace_id, role, company_id, invited_name, expires_at")
           .ilike("email", user.email)
           .is("accepted_at", null);
 
@@ -60,6 +60,14 @@ export async function GET(request: Request) {
               company_id: resolvedCompanyId,
             })
             .eq("id", invite.id);
+
+          if (invite.invited_name?.trim()) {
+            await supabase
+              .from("profiles")
+              .update({ full_name: invite.invited_name.trim() })
+              .eq("id", user.id)
+              .is("full_name", null);
+          }
         }
       }
 

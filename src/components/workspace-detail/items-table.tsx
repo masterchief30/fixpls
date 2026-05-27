@@ -15,19 +15,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface ItemsTableProps {
   items: ItemWithDetails[];
-  defaultOwnerCompanyId: string | null;
   onItemClick: (id: string) => void;
 }
 
 export function ItemsTable({
   items,
-  defaultOwnerCompanyId,
   onItemClick,
 }: ItemsTableProps) {
   const resolveOwner = (item: ItemWithDetails) => {
     if (item.owner_company) return item.owner_company.name;
     if (item.owner_company_id && !item.owner_company) return "Unknown company";
-    return defaultOwnerCompanyId ? "Workspace default" : "—";
+    return "—";
   };
 
   return (
@@ -37,7 +35,7 @@ export function ItemsTable({
           <TableRow>
             <TableHead className="w-[28%]">Title</TableHead>
             <TableHead>Category</TableHead>
-            <TableHead>Component</TableHead>
+            <TableHead>Menu Component</TableHead>
             <TableHead>Owner</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Last updated</TableHead>

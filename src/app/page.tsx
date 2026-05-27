@@ -22,7 +22,7 @@ function WarningTriangleIcon({ className }: { className?: string }) {
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#121426] via-[#161c34] to-[#0c1022]">
+    <main className="relative min-h-screen overflow-x-hidden bg-gradient-to-br from-[#121426] via-[#161c34] to-[#0c1022]">
       <div className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(0deg,rgba(255,255,255,0.02),rgba(255,255,255,0.02)_1px,transparent_1px,transparent_4px)]" />
 
       <div className="absolute left-6 top-6 hidden sm:flex">
@@ -34,7 +34,7 @@ export default function Home() {
         </div>
       </div>
 
-      <section className="mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center px-6 py-16">
+      <section className="mx-auto flex min-h-[100svh] w-full max-w-5xl items-start justify-center px-4 pb-12 pt-20 sm:min-h-screen sm:items-center sm:px-6 sm:py-16">
         <div className="w-full max-w-2xl border-2 border-[#d4d4d4] bg-[#c0c0c0] shadow-[8px_8px_0_#0d0d0d]">
           <div className="flex items-center justify-between bg-[#000080] px-3 py-1">
             <span className="text-sm font-bold tracking-tight text-white">
@@ -50,23 +50,17 @@ export default function Home() {
             <div className="space-y-2 pl-2">
               <h1 className="text-2xl font-bold">plsfix</h1>
               <p className="max-w-xl text-[15px] leading-6">
-                Fixing bugs never was easier.
+                Logging changes has never been easier.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center justify-center gap-3 bg-[#d4d0c8] px-6 pb-6">
+          <div className="flex items-center justify-center bg-[#d4d0c8] px-6 pb-6">
             <Link
               href="/login"
               className="inline-flex h-10 min-w-28 cursor-pointer items-center justify-center border border-[#7f7f7f] bg-[#c0c0c0] px-5 text-sm font-semibold text-black shadow-[inset_-1px_-1px_0_#4f4f4f,inset_1px_1px_0_#ffffff] transition hover:bg-[#cdcdcd] active:translate-y-px"
             >
               Log in
-            </Link>
-            <Link
-              href="/signup"
-              className="inline-flex h-10 min-w-28 cursor-pointer items-center justify-center border border-[#7f7f7f] bg-[#c0c0c0] px-5 text-sm font-semibold text-black shadow-[inset_-1px_-1px_0_#4f4f4f,inset_1px_1px_0_#ffffff] transition hover:bg-[#cdcdcd] active:translate-y-px"
-            >
-              Sign up
             </Link>
           </div>
         </div>
