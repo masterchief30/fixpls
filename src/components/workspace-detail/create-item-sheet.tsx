@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
   Sheet,
@@ -21,14 +21,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Category, ItemStatus, ITEM_STATUSES, Profile, WorkspaceMember } from "@/lib/types";
+import {
+  Category,
+  Company,
+  Component,
+  DEFAULT_ITEM_STATUSES,
+  ItemStatus,
+  Profile,
+  REPORTER_SOURCES,
+  Status,
+  WorkspaceMember,
+} from "@/lib/types";
 
 interface CreateItemSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   workspaceId: string;
   categories: Category[];
+  components: Component[];
+  statuses: Status[];
+  companies: Company[];
   members: (WorkspaceMember & { profile: Profile | null })[];
+  defaultOwnerCompanyId: string | null;
   onCreated: () => void;
 }
 
@@ -37,16 +51,43 @@ export function CreateItemSheet({
   onOpenChange,
   workspaceId,
   categories,
+  components,
+  statuses,
+  companies,
   members,
+  defaultOwnerCompanyId,
   onCreated,
 }: CreateItemSheetProps) {
   const supabase = createClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [categoryId, setCategoryId] = useState<string>("");
-  const [status, setStatus] = useState<ItemStatus>("New");
+  const [componentId, setComponentId] = useState<string>("");
+  const [ownerCompanyId, setOwnerCompanyId] = useState<string>("none");
+  const [reporterName, setReporterName] = useState("");
+  const [reporterEmail, setReporterEmail] = useState("");
+  const [reporterSource, setReporterSource] =
+    useState<(typeof REPORTER_SOURCES)[number]>("Client");
+  const [status, setStatus] = useState<ItemStatus>(statuses[0]?.name ?? "New");
   const [assigneeId, setAssigneeId] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const statusOptions = useMemo(
+    () =>
+      statuses.length
+        ? statuses
+            .slice()
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map((entry) => entry.name)
+        : DEFAULT_ITEM_STATUSES,
+    [statuses]
+  );
+
+  useEffect(() => {
+    if (open) {
+      setOwnerCompanyId(defaultOwnerCompanyId ?? "none");
+      setStatus(statusOptions[0] ?? "New");
+    }
+  }, [open, defaultOwnerCompanyId, statusOptions]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +107,11 @@ export function CreateItemSheet({
         title: title.trim(),
         description: description.trim() || null,
         category_id: categoryId || null,
+        component_id: componentId || null,
+        owner_company_id: ownerCompanyId === "none" ? null : ownerCompanyId,
+        reporter_name: reporterName.trim() || null,
+        reporter_email: reporterEmail.trim().toLowerCase() || null,
+        reporter_source: reporterSource || null,
         status,
         assignee_id: assigneeId || null,
         created_by: user.id,
@@ -88,7 +134,12 @@ export function CreateItemSheet({
     setTitle("");
     setDescription("");
     setCategoryId("");
-    setStatus("New");
+    setComponentId("");
+    setOwnerCompanyId(defaultOwnerCompanyId ?? "none");
+    setReporterName("");
+    setReporterEmail("");
+    setReporterSource("Client");
+    setStatus(statusOptions[0] ?? "New");
     setAssigneeId("");
     setLoading(false);
     onOpenChange(false);
@@ -146,9 +197,40 @@ export function CreateItemSheet({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ITEM_STATUSES.map((s) => (
+                  {statusOptions.map((s) => (
                     <SelectItem key={s} value={s}>
                       {s}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Component</Label>
+              <Select value={componentId} onValueChange={(v) => setComponentId(v ?? "")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select component" />
+                </SelectTrigger>
+                <SelectContent>
+                  {components.map((component) => (
+                    <SelectItem key={component.id} value={component.id}>
+                      {component.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Owner company</Label>
+              <Select value={ownerCompanyId} onValueChange={(v) => setOwnerCompanyId(v ?? "none")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Use workspace default" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Use workspace default</SelectItem>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={company.id}>
+                      {company.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -164,6 +246,40 @@ export function CreateItemSheet({
                   {members.map((m) => (
                     <SelectItem key={m.user_id} value={m.user_id}>
                       {m.profile?.full_name ?? m.profile?.email ?? m.user_id.slice(0, 8)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reporter-name">Reporter name</Label>
+              <Input
+                id="reporter-name"
+                placeholder="Client name"
+                value={reporterName}
+                onChange={(e) => setReporterName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reporter-email">Reporter email</Label>
+              <Input
+                id="reporter-email"
+                type="email"
+                placeholder="reporter@company.com"
+                value={reporterEmail}
+                onChange={(e) => setReporterEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Reporter source</Label>
+              <Select value={reporterSource} onValueChange={(v) => setReporterSource((v as (typeof REPORTER_SOURCES)[number]) ?? "Client")}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {REPORTER_SOURCES.map((source) => (
+                    <SelectItem key={source} value={source}>
+                      {source}
                     </SelectItem>
                   ))}
                 </SelectContent>

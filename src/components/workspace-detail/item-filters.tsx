@@ -8,18 +8,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Category, ItemStatus, ITEM_STATUSES, Profile, WorkspaceMember } from "@/lib/types";
+import {
+  Category,
+  Company,
+  Component,
+  DEFAULT_ITEM_STATUSES,
+  ItemStatus,
+  Profile,
+  Status,
+  WorkspaceMember,
+} from "@/lib/types";
 
 interface ItemFiltersProps {
   statusFilter: ItemStatus | "all";
   onStatusChange: (v: ItemStatus | "all") => void;
   categoryFilter: string | "all";
   onCategoryChange: (v: string | "all") => void;
+  componentFilter: string | "all";
+  onComponentChange: (v: string | "all") => void;
   assigneeFilter: string | "all";
   onAssigneeChange: (v: string | "all") => void;
+  ownerCompanyFilter: string | "all";
+  onOwnerCompanyChange: (v: string | "all") => void;
   searchQuery: string;
   onSearchChange: (v: string) => void;
+  statuses: Status[];
   categories: Category[];
+  components: Component[];
+  companies: Company[];
   members: (WorkspaceMember & { profile: Profile | null })[];
 }
 
@@ -28,13 +44,27 @@ export function ItemFilters({
   onStatusChange,
   categoryFilter,
   onCategoryChange,
+  componentFilter,
+  onComponentChange,
   assigneeFilter,
   onAssigneeChange,
+  ownerCompanyFilter,
+  onOwnerCompanyChange,
   searchQuery,
   onSearchChange,
+  statuses,
   categories,
+  components,
+  companies,
   members,
 }: ItemFiltersProps) {
+  const statusOptions = statuses.length
+    ? statuses
+        .slice()
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((status) => status.name)
+    : DEFAULT_ITEM_STATUSES;
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Input
@@ -49,7 +79,7 @@ export function ItemFilters({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All statuses</SelectItem>
-          {ITEM_STATUSES.map((s) => (
+          {statusOptions.map((s) => (
             <SelectItem key={s} value={s}>
               {s}
             </SelectItem>
@@ -69,6 +99,19 @@ export function ItemFilters({
           ))}
         </SelectContent>
       </Select>
+      <Select value={componentFilter} onValueChange={(v) => onComponentChange(v ?? "all")}>
+        <SelectTrigger className="h-8 w-36 text-xs">
+          <SelectValue placeholder="Component" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All components</SelectItem>
+          {components.map((component) => (
+            <SelectItem key={component.id} value={component.id}>
+              {component.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <Select value={assigneeFilter} onValueChange={(v) => onAssigneeChange(v ?? "all")}>
         <SelectTrigger className="h-8 w-36 text-xs">
           <SelectValue placeholder="Assignee" />
@@ -78,6 +121,22 @@ export function ItemFilters({
           {members.map((m) => (
             <SelectItem key={m.user_id} value={m.user_id}>
               {m.profile?.full_name ?? m.profile?.email ?? m.user_id.slice(0, 8)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select
+        value={ownerCompanyFilter}
+        onValueChange={(v) => onOwnerCompanyChange(v ?? "all")}
+      >
+        <SelectTrigger className="h-8 w-36 text-xs">
+          <SelectValue placeholder="Owner company" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All owner companies</SelectItem>
+          {companies.map((company) => (
+            <SelectItem key={company.id} value={company.id}>
+              {company.name}
             </SelectItem>
           ))}
         </SelectContent>

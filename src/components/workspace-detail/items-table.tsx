@@ -15,17 +15,30 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface ItemsTableProps {
   items: ItemWithDetails[];
+  defaultOwnerCompanyId: string | null;
   onItemClick: (id: string) => void;
 }
 
-export function ItemsTable({ items, onItemClick }: ItemsTableProps) {
+export function ItemsTable({
+  items,
+  defaultOwnerCompanyId,
+  onItemClick,
+}: ItemsTableProps) {
+  const resolveOwner = (item: ItemWithDetails) => {
+    if (item.owner_company) return item.owner_company.name;
+    if (item.owner_company_id && !item.owner_company) return "Unknown company";
+    return defaultOwnerCompanyId ? "Workspace default" : "—";
+  };
+
   return (
     <div className="flex-1 overflow-auto">
       <Table>
         <TableHeader className="sticky top-0 bg-background">
           <TableRow>
-            <TableHead className="w-[35%]">Title</TableHead>
+            <TableHead className="w-[28%]">Title</TableHead>
             <TableHead>Category</TableHead>
+            <TableHead>Component</TableHead>
+            <TableHead>Owner</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Last updated</TableHead>
             <TableHead>Assignee</TableHead>
@@ -34,7 +47,7 @@ export function ItemsTable({ items, onItemClick }: ItemsTableProps) {
         <TableBody>
           {items.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="h-32 text-center text-sm text-muted-foreground">
+              <TableCell colSpan={7} className="h-32 text-center text-sm text-muted-foreground">
                 No items found.
               </TableCell>
             </TableRow>
@@ -58,6 +71,16 @@ export function ItemsTable({ items, onItemClick }: ItemsTableProps) {
                   ) : (
                     <span className="text-sm text-muted-foreground">—</span>
                   )}
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-muted-foreground">
+                    {item.component?.name ?? "—"}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-muted-foreground">
+                    {resolveOwner(item)}
+                  </span>
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={item.status} />

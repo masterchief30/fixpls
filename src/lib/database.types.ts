@@ -9,6 +9,92 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      companies: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          name?: string;
+          created_at?: string;
+        };
+      };
+      components: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          name?: string;
+          created_at?: string;
+        };
+      };
+      statuses: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          name: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          name: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          name?: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+      };
+      company_domains: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          company_id: string;
+          domain: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          company_id: string;
+          domain: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          company_id?: string;
+          domain?: string;
+          created_at?: string;
+        };
+      };
       profiles: {
         Row: {
           id: string;
@@ -41,18 +127,21 @@ export interface Database {
           name: string;
           created_at: string;
           created_by: string;
+          default_owner_company_id: string | null;
         };
         Insert: {
           id?: string;
           name: string;
           created_at?: string;
           created_by: string;
+          default_owner_company_id?: string | null;
         };
         Update: {
           id?: string;
           name?: string;
           created_at?: string;
           created_by?: string;
+          default_owner_company_id?: string | null;
         };
       };
       workspace_members: {
@@ -61,18 +150,21 @@ export interface Database {
           user_id: string;
           role: "admin" | "member";
           created_at: string;
+          company_id: string | null;
         };
         Insert: {
           workspace_id: string;
           user_id: string;
           role: "admin" | "member";
           created_at?: string;
+          company_id?: string | null;
         };
         Update: {
           workspace_id?: string;
           user_id?: string;
           role?: "admin" | "member";
           created_at?: string;
+          company_id?: string | null;
         };
       };
       categories: {
@@ -105,14 +197,12 @@ export interface Database {
           title: string;
           description: string | null;
           category_id: string | null;
-          status:
-            | "New"
-            | "Acknowledged"
-            | "In progress"
-            | "Blocked"
-            | "Fixed"
-            | "Verified"
-            | "Closed";
+          component_id: string | null;
+          owner_company_id: string | null;
+          reporter_name: string | null;
+          reporter_email: string | null;
+          reporter_source: string | null;
+          status: string;
           assignee_id: string | null;
           created_by: string;
           created_at: string;
@@ -124,14 +214,12 @@ export interface Database {
           title: string;
           description?: string | null;
           category_id?: string | null;
-          status?:
-            | "New"
-            | "Acknowledged"
-            | "In progress"
-            | "Blocked"
-            | "Fixed"
-            | "Verified"
-            | "Closed";
+          component_id?: string | null;
+          owner_company_id?: string | null;
+          reporter_name?: string | null;
+          reporter_email?: string | null;
+          reporter_source?: string | null;
+          status?: string;
           assignee_id?: string | null;
           created_by: string;
           created_at?: string;
@@ -143,14 +231,12 @@ export interface Database {
           title?: string;
           description?: string | null;
           category_id?: string | null;
-          status?:
-            | "New"
-            | "Acknowledged"
-            | "In progress"
-            | "Blocked"
-            | "Fixed"
-            | "Verified"
-            | "Closed";
+          component_id?: string | null;
+          owner_company_id?: string | null;
+          reporter_name?: string | null;
+          reporter_email?: string | null;
+          reporter_source?: string | null;
+          status?: string;
           assignee_id?: string | null;
           created_by?: string;
           created_at?: string;
@@ -185,7 +271,16 @@ export interface Database {
           id: string;
           item_id: string;
           user_id: string;
-          action_type: "created" | "status_change" | "category_change" | "assignee_change";
+          action_type:
+            | "created"
+            | "status_change"
+            | "category_change"
+            | "assignee_change"
+            | "title_change"
+            | "description_change"
+            | "owner_company_change"
+            | "reporter_update"
+            | "component_change";
           from_value: string | null;
           to_value: string | null;
           created_at: string;
@@ -194,7 +289,16 @@ export interface Database {
           id?: string;
           item_id: string;
           user_id: string;
-          action_type: "created" | "status_change" | "category_change" | "assignee_change";
+          action_type:
+            | "created"
+            | "status_change"
+            | "category_change"
+            | "assignee_change"
+            | "title_change"
+            | "description_change"
+            | "owner_company_change"
+            | "reporter_update"
+            | "component_change";
           from_value?: string | null;
           to_value?: string | null;
           created_at?: string;
@@ -203,15 +307,73 @@ export interface Database {
           id?: string;
           item_id?: string;
           user_id?: string;
-          action_type?: "created" | "status_change" | "category_change" | "assignee_change";
+          action_type?:
+            | "created"
+            | "status_change"
+            | "category_change"
+            | "assignee_change"
+            | "title_change"
+            | "description_change"
+            | "owner_company_change"
+            | "reporter_update"
+            | "component_change";
           from_value?: string | null;
           to_value?: string | null;
           created_at?: string;
         };
       };
+      workspace_invites: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          email: string;
+          role: "admin" | "member";
+          company_id: string | null;
+          invited_by: string | null;
+          token: string;
+          expires_at: string | null;
+          accepted_at: string | null;
+          accepted_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          email: string;
+          role?: "admin" | "member";
+          company_id?: string | null;
+          invited_by?: string | null;
+          token?: string;
+          expires_at?: string | null;
+          accepted_at?: string | null;
+          accepted_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          email?: string;
+          role?: "admin" | "member";
+          company_id?: string | null;
+          invited_by?: string | null;
+          token?: string;
+          expires_at?: string | null;
+          accepted_at?: string | null;
+          accepted_by?: string | null;
+          created_at?: string;
+        };
+      };
     };
     Views: {};
-    Functions: {};
+    Functions: {
+      resolve_company_for_email: {
+        Args: {
+          p_workspace_id: string;
+          p_email: string;
+        };
+        Returns: string | null;
+      };
+    };
     Enums: {};
   };
 }

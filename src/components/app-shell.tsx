@@ -3,13 +3,16 @@ import Link from "next/link";
 interface AppShellProps {
   children: React.ReactNode;
   backHref?: string;
+  flush?: boolean;
 }
 
-export function AppShell({ children, backHref }: AppShellProps) {
+export function AppShell({ children, backHref, flush = false }: AppShellProps) {
   return (
     <div className="relative min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-slate-900/70 px-6 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-6xl items-center">
+      <header
+        className={`sticky top-0 z-20 border-b border-white/10 bg-slate-900/70 backdrop-blur-md ${flush ? "px-0" : "px-4"}`}
+      >
+        <div className={`flex h-14 items-center ${flush ? "pl-3" : ""}`}>
           {backHref ? (
             <Link
               href={backHref}
@@ -24,7 +27,7 @@ export function AppShell({ children, backHref }: AppShellProps) {
           )}
         </div>
       </header>
-      <main className="mx-auto max-w-6xl flex-1 p-6">{children}</main>
+      <main className={flush ? "flex-1 p-0" : "flex-1 px-4 py-6"}>{children}</main>
     </div>
   );
 }

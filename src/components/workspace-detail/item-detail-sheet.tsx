@@ -15,15 +15,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { StatusBadge } from "@/components/status-badge";
 import { CommentThread } from "@/components/comment-thread";
 import {
   Category,
+  Company,
+  Component,
+  DEFAULT_ITEM_STATUSES,
   ItemStatus,
-  ITEM_STATUSES,
   ItemWithDetails,
   Profile,
+  REPORTER_SOURCES,
+  Status,
   WorkspaceMember,
   CommentWithAuthor,
   ActivityLogWithAuthor,
@@ -35,7 +40,11 @@ interface ItemDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categories: Category[];
+  components: Component[];
+  statuses: Status[];
+  companies: Company[];
   members: (WorkspaceMember & { profile: Profile | null })[];
+  defaultOwnerCompanyId: string | null;
   onUpdated: () => void;
 }
 
@@ -44,7 +53,11 @@ export function ItemDetailSheet({
   open,
   onOpenChange,
   categories,
+  components,
+  statuses,
+  companies,
   members,
+  defaultOwnerCompanyId,
   onUpdated,
 }: ItemDetailSheetProps) {
   const supabase = createClient();
@@ -52,6 +65,15 @@ export function ItemDetailSheet({
   const [activities, setActivities] = useState<ActivityLogWithAuthor[]>([]);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [statusValue, setStatusValue] = useState<ItemStatus>("New");
+  const [categoryValue, setCategoryValue] = useState<string>("none");
+  const [componentValue, setComponentValue] = useState<string>("none");
+  const [assigneeValue, setAssigneeValue] = useState<string>("none");
+  const [ownerCompanyValue, setOwnerCompanyValue] = useState<string>("default");
+  const [reporterName, setReporterName] = useState("");
+  const [reporterEmail, setReporterEmail] = useState("");
+  const [reporterSource, setReporterSource] =
+    useState<(typeof REPORTER_SOURCES)[number]>("Client");
 
   const thread: ThreadEntry[] = useMemo(() => {
     const entries: ThreadEntry[] = [
@@ -61,6 +83,18 @@ export function ItemDetailSheet({
     entries.sort((a, b) => new Date(a.data.created_at).getTime() - new Date(b.data.created_at).getTime());
     return entries;
   }, [comments, activities]);
+
+  const statusOptions = useMemo(() => {
+    const fromWorkspace = statuses
+      .slice()
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((entry) => entry.name);
+    const base = fromWorkspace.length ? fromWorkspace : DEFAULT_ITEM_STATUSES;
+    if (item?.status && !base.includes(item.status)) {
+      return [item.status, ...base];
+    }
+    return base;
+  }, [statuses, item?.status]);
 
   const fetchComments = useCallback(async () => {
     if (!item) return;
@@ -86,8 +120,18 @@ export function ItemDetailSheet({
     if (item) {
       setTitle(item.title);
       setDescription(item.description ?? "");
+      setStatusValue(item.status);
+      setCategoryValue(item.category_id ?? "none");
+      setComponentValue(item.component_id ?? "none");
+      setAssigneeValue(item.assignee_id ?? "none");
+      setOwnerCompanyValue(item.owner_company_id ?? "default");
+      setReporterName(item.reporter_name ?? "");
+      setReporterEmail(item.reporter_email ?? "");
+      setReporterSource(
+        (item.reporter_source as (typeof REPORTER_SOURCES)[number]) ?? "Client"
+      );
     }
-  }, [item?.id]);
+  }, [item?.id, item]);
 
   useEffect(() => {
     if (item) {
@@ -118,7 +162,15 @@ export function ItemDetailSheet({
   }, [supabase, item, fetchComments, fetchActivities]);
 
   const logActivity = async (
-    actionType: "status_change" | "category_change" | "assignee_change",
+    actionType:
+      | "status_change"
+      | "category_change"
+      | "assignee_change"
+      | "title_change"
+      | "description_change"
+      | "owner_company_change"
+      | "reporter_update"
+      | "component_change",
     from: string | null,
     to: string | null
   ) => {
@@ -145,11 +197,17 @@ export function ItemDetailSheet({
   const handleTitleBlur = async () => {
     if (!item || title === item.title) return;
     await updateItem({ title });
+    await logActivity("title_change", item.title, title);
   };
 
   const handleDescBlur = async () => {
     if (!item || description === (item.description ?? "")) return;
     await updateItem({ description: description || null });
+    await logActivity(
+      "description_change",
+      item.description ?? "",
+      description || ""
+    );
   };
 
   const handleStatusChange = async (newStatus: ItemStatus) => {
@@ -159,20 +217,90 @@ export function ItemDetailSheet({
   };
 
   const handleCategoryChange = async (newCategoryId: string) => {
-    if (!item || newCategoryId === item.category_id) return;
+    if (!item) return;
+    const nextCategoryId = newCategoryId === "none" ? null : newCategoryId;
+    if (nextCategoryId === item.category_id) return;
     const oldName = item.category?.name ?? "None";
-    const newName = categories.find((c) => c.id === newCategoryId)?.name ?? "None";
-    await updateItem({ category_id: newCategoryId === "none" ? null : newCategoryId });
+    const newName =
+      categories.find((c) => c.id === nextCategoryId)?.name ?? "None";
+    await updateItem({ category_id: nextCategoryId });
     await logActivity("category_change", oldName, newName);
   };
 
+  const handleComponentChange = async (newComponentId: string) => {
+    if (!item) return;
+    const nextComponentId = newComponentId === "none" ? null : newComponentId;
+    if (nextComponentId === item.component_id) return;
+    const oldName = item.component?.name ?? "None";
+    const newName =
+      components.find((component) => component.id === nextComponentId)?.name ??
+      "None";
+    await updateItem({ component_id: nextComponentId });
+    await logActivity("component_change", oldName, newName);
+  };
+
   const handleAssigneeChange = async (newAssigneeId: string) => {
-    if (!item || newAssigneeId === item.assignee_id) return;
+    if (!item) return;
+    const nextAssigneeId = newAssigneeId === "none" ? null : newAssigneeId;
+    if (nextAssigneeId === item.assignee_id) return;
     const oldName = item.assignee?.full_name ?? item.assignee?.email ?? "Unassigned";
-    const newProfile = members.find((m) => m.user_id === newAssigneeId)?.profile;
+    const newProfile = members.find((m) => m.user_id === nextAssigneeId)?.profile;
     const newName = newProfile?.full_name ?? newProfile?.email ?? "Unassigned";
-    await updateItem({ assignee_id: newAssigneeId === "none" ? null : newAssigneeId });
+    await updateItem({ assignee_id: nextAssigneeId });
     await logActivity("assignee_change", oldName, newName);
+  };
+
+  const handleOwnerCompanyChange = async (newOwnerCompanyId: string) => {
+    if (!item) return;
+    const nextOwnerCompanyId = newOwnerCompanyId === "default" ? null : newOwnerCompanyId;
+    if (nextOwnerCompanyId === item.owner_company_id) return;
+    const oldName =
+      item.owner_company?.name ??
+      (defaultOwnerCompanyId ? "Workspace default" : "None");
+    const newName =
+      newOwnerCompanyId === "default"
+        ? defaultOwnerCompanyId
+          ? "Workspace default"
+          : "None"
+        : companies.find((company) => company.id === newOwnerCompanyId)?.name ?? "None";
+    await updateItem({
+      owner_company_id: nextOwnerCompanyId,
+    });
+    await logActivity("owner_company_change", oldName, newName);
+  };
+
+  const handleReporterSave = async (
+    next: {
+      name?: string;
+      email?: string;
+      source?: (typeof REPORTER_SOURCES)[number];
+    } = {}
+  ) => {
+    if (!item) return;
+    const nextName = (next.name ?? reporterName).trim() || null;
+    const nextEmail = (next.email ?? reporterEmail).trim().toLowerCase() || null;
+    const nextSource = next.source ?? reporterSource;
+    const hasChanges =
+      nextName !== (item.reporter_name ?? null) ||
+      nextEmail !== (item.reporter_email ?? null) ||
+      nextSource !== (item.reporter_source ?? null);
+    if (!hasChanges) return;
+
+    const oldReporter = [
+      item.reporter_name ?? "—",
+      item.reporter_email ?? "—",
+      item.reporter_source ?? "—",
+    ].join(" | ");
+    const newReporter = [nextName ?? "—", nextEmail ?? "—", nextSource ?? "—"].join(
+      " | "
+    );
+
+    await updateItem({
+      reporter_name: nextName,
+      reporter_email: nextEmail,
+      reporter_source: nextSource,
+    });
+    await logActivity("reporter_update", oldReporter, newReporter);
   };
 
   const handleAddComment = async (body: string) => {
@@ -204,12 +332,19 @@ export function ItemDetailSheet({
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Status</span>
-                <Select value={item.status} onValueChange={(v) => handleStatusChange((v as ItemStatus) ?? "New")}>
+                <Select
+                  value={statusValue}
+                  onValueChange={(v) => {
+                    const value = (v as ItemStatus) ?? "New";
+                    setStatusValue(value);
+                    handleStatusChange(value);
+                  }}
+                >
                   <SelectTrigger className="h-7 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {ITEM_STATUSES.map((s) => (
+                    {statusOptions.map((s) => (
                       <SelectItem key={s} value={s}>
                         {s}
                       </SelectItem>
@@ -219,7 +354,14 @@ export function ItemDetailSheet({
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Category</span>
-                <Select value={item.category_id ?? "none"} onValueChange={(v) => handleCategoryChange(v ?? "none")}>
+                <Select
+                  value={categoryValue}
+                  onValueChange={(v) => {
+                    const value = v ?? "none";
+                    setCategoryValue(value);
+                    handleCategoryChange(value);
+                  }}
+                >
                   <SelectTrigger className="h-7 text-xs">
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
@@ -234,8 +376,38 @@ export function ItemDetailSheet({
                 </Select>
               </div>
               <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Component</span>
+                <Select
+                  value={componentValue}
+                  onValueChange={(v) => {
+                    const value = v ?? "none";
+                    setComponentValue(value);
+                    handleComponentChange(value);
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-xs">
+                    <SelectValue placeholder="None" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {components.map((component) => (
+                      <SelectItem key={component.id} value={component.id}>
+                        {component.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Assignee</span>
-                <Select value={item.assignee_id ?? "none"} onValueChange={(v) => handleAssigneeChange(v ?? "none")}>
+                <Select
+                  value={assigneeValue}
+                  onValueChange={(v) => {
+                    const value = v ?? "none";
+                    setAssigneeValue(value);
+                    handleAssigneeChange(value);
+                  }}
+                >
                   <SelectTrigger className="h-7 text-xs">
                     <SelectValue placeholder="Unassigned" />
                   </SelectTrigger>
@@ -244,6 +416,29 @@ export function ItemDetailSheet({
                     {members.map((m) => (
                       <SelectItem key={m.user_id} value={m.user_id}>
                         {m.profile?.full_name ?? m.profile?.email ?? m.user_id.slice(0, 8)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">Owner</span>
+                <Select
+                  value={ownerCompanyValue}
+                  onValueChange={(v) => {
+                    const value = v ?? "default";
+                    setOwnerCompanyValue(value);
+                    handleOwnerCompanyChange(value);
+                  }}
+                >
+                  <SelectTrigger className="h-7 text-xs">
+                    <SelectValue placeholder="Workspace default" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">Workspace default</SelectItem>
+                    {companies.map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -264,6 +459,44 @@ export function ItemDetailSheet({
                 placeholder="Add a description..."
                 className="mt-1 min-h-[100px] resize-none text-sm"
               />
+            </div>
+
+            <div className="space-y-3 rounded-md border p-3">
+              <Label className="text-xs text-muted-foreground">Reporter</Label>
+              <div className="grid grid-cols-1 gap-2">
+                <Input
+                  value={reporterName}
+                  onChange={(e) => setReporterName(e.target.value)}
+                  onBlur={() => handleReporterSave()}
+                  placeholder="Reporter name"
+                />
+                <Input
+                  value={reporterEmail}
+                  onChange={(e) => setReporterEmail(e.target.value)}
+                  onBlur={() => handleReporterSave()}
+                  placeholder="Reporter email"
+                  type="email"
+                />
+                <Select
+                  value={reporterSource}
+                  onValueChange={(v) => {
+                    const value = (v as (typeof REPORTER_SOURCES)[number]) ?? "Client";
+                    setReporterSource(value);
+                    handleReporterSave({ source: value });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {REPORTER_SOURCES.map((source) => (
+                      <SelectItem key={source} value={source}>
+                        {source}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <CommentThread

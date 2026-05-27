@@ -61,11 +61,26 @@ export function CommentThread({ thread, onAddComment }: CommentThreadProps) {
             case "created":
               message = `created this item`;
               break;
+            case "title_change":
+              message = `updated title from ${a.from_value ?? "—"} → ${a.to_value ?? "—"}`;
+              break;
+            case "description_change":
+              message = `updated description`;
+              break;
             case "status_change":
               message = `changed status from ${a.from_value ?? "—"} → ${a.to_value ?? "—"}`;
               break;
             case "category_change":
               message = `changed category from ${a.from_value ?? "—"} → ${a.to_value ?? "—"}`;
+              break;
+            case "component_change":
+              message = `changed component from ${a.from_value ?? "—"} → ${a.to_value ?? "—"}`;
+              break;
+            case "owner_company_change":
+              message = `changed owner company from ${a.from_value ?? "—"} → ${a.to_value ?? "—"}`;
+              break;
+            case "reporter_update":
+              message = `updated reporter details`;
               break;
             case "assignee_change":
               message = `changed assignee from ${a.from_value ?? "—"} → ${a.to_value ?? "—"}`;

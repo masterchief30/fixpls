@@ -19,18 +19,61 @@ function seed() {
   const DEMO_USER_ID = "demo-user-1";
   const DEMO_EMAIL = "demo@plsfix.io";
   const wsId = uuidv4();
+  const company1 = uuidv4();
+  const company2 = uuidv4();
   const cat1 = uuidv4();
   const cat2 = uuidv4();
   const cat3 = uuidv4();
+  const comp1 = uuidv4();
+  const comp2 = uuidv4();
+  const status1 = uuidv4();
+  const status2 = uuidv4();
+  const status3 = uuidv4();
+  const status4 = uuidv4();
+  const status5 = uuidv4();
+  const status6 = uuidv4();
+  const status7 = uuidv4();
   const item1 = uuidv4();
   const item2 = uuidv4();
 
   setTable("workspaces", [
-    { id: wsId, name: "Acme Corp", created_at: new Date().toISOString(), created_by: DEMO_USER_ID },
+    {
+      id: wsId,
+      name: "Acme Corp",
+      created_at: new Date().toISOString(),
+      created_by: DEMO_USER_ID,
+      default_owner_company_id: company1,
+    },
   ]);
 
   setTable("workspace_members", [
-    { workspace_id: wsId, user_id: DEMO_USER_ID, role: "admin", created_at: new Date().toISOString() },
+    {
+      workspace_id: wsId,
+      user_id: DEMO_USER_ID,
+      role: "admin",
+      company_id: company1,
+      created_at: new Date().toISOString(),
+    },
+  ]);
+
+  setTable("companies", [
+    { id: company1, workspace_id: wsId, name: "Acme Team", created_at: new Date().toISOString() },
+    { id: company2, workspace_id: wsId, name: "Client Co", created_at: new Date().toISOString() },
+  ]);
+
+  setTable("components", [
+    { id: comp1, workspace_id: wsId, name: "Frontend", created_at: new Date().toISOString() },
+    { id: comp2, workspace_id: wsId, name: "API", created_at: new Date().toISOString() },
+  ]);
+
+  setTable("statuses", [
+    { id: status1, workspace_id: wsId, name: "New", sort_order: 1, created_at: new Date().toISOString() },
+    { id: status2, workspace_id: wsId, name: "Acknowledged", sort_order: 2, created_at: new Date().toISOString() },
+    { id: status3, workspace_id: wsId, name: "In progress", sort_order: 3, created_at: new Date().toISOString() },
+    { id: status4, workspace_id: wsId, name: "Blocked", sort_order: 4, created_at: new Date().toISOString() },
+    { id: status5, workspace_id: wsId, name: "Fixed", sort_order: 5, created_at: new Date().toISOString() },
+    { id: status6, workspace_id: wsId, name: "Verified", sort_order: 6, created_at: new Date().toISOString() },
+    { id: status7, workspace_id: wsId, name: "Closed", sort_order: 7, created_at: new Date().toISOString() },
   ]);
 
   setTable("profiles", [
@@ -50,6 +93,11 @@ function seed() {
       title: "Login page crashes on mobile",
       description: "When opening the login page on iOS Safari, the app throws a runtime error.",
       category_id: cat1,
+      component_id: comp1,
+      owner_company_id: company1,
+      reporter_name: "John from Client Co",
+      reporter_email: "john@client.co",
+      reporter_source: "Client",
       status: "In progress",
       assignee_id: DEMO_USER_ID,
       created_by: DEMO_USER_ID,
@@ -62,6 +110,11 @@ function seed() {
       title: "Dark mode support",
       description: "Would be great to have a dark mode toggle in settings.",
       category_id: cat3,
+      component_id: comp2,
+      owner_company_id: company2,
+      reporter_name: "Support Inbox",
+      reporter_email: "support@acme.co",
+      reporter_source: "Support",
       status: "New",
       assignee_id: null,
       created_by: DEMO_USER_ID,
@@ -72,6 +125,8 @@ function seed() {
 
   setTable("comments", []);
   setTable("activity_log", []);
+  setTable("workspace_invites", []);
+  setTable("company_domains", []);
 
   if (typeof window !== "undefined") {
     localStorage.setItem("plsfix_demo_seeded", "true");
@@ -87,6 +142,7 @@ class MockQueryBuilder {
   private mode: "select" | "insert" | "update" | "delete" = "select";
   private insertValues?: Row | Row[];
   private updateValues?: Row;
+  private upsertConflictCols: string[] = [];
 
   constructor(private tableName: string) {}
 
@@ -136,6 +192,16 @@ class MockQueryBuilder {
     return this;
   }
 
+  upsert(values: Row | Row[], opts?: { onConflict?: string }) {
+    this.mode = "insert";
+    this.insertValues = values;
+    this.upsertConflictCols = (opts?.onConflict ?? "")
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean);
+    return this;
+  }
+
   update(values: Row) {
     this.mode = "update";
     this.updateValues = values;
@@ -173,6 +239,14 @@ class MockQueryBuilder {
         const profs = getTable("profiles");
         copy.assignee = profs.find((p) => p.id === row.assignee_id) ?? null;
       }
+      if (fields?.includes("component:component_id")) {
+        const comps = getTable("components");
+        copy.component = comps.find((cp) => cp.id === row.component_id) ?? null;
+      }
+      if (fields?.includes("owner_company:owner_company_id")) {
+        const companies = getTable("companies");
+        copy.owner_company = companies.find((c) => c.id === row.owner_company_id) ?? null;
+      }
       if (fields?.includes("creator:created_by")) {
         const profs = getTable("profiles");
         copy.creator = profs.find((p) => p.id === row.created_by) ?? null;
@@ -199,6 +273,19 @@ class MockQueryBuilder {
     const arr = Array.isArray(this.insertValues!) ? this.insertValues! : [this.insertValues!];
     const current = this.rows;
     const inserted = arr.map((v) => {
+      if (this.upsertConflictCols.length > 0) {
+        const existingIdx = current.findIndex((row) =>
+          this.upsertConflictCols.every((col) => row[col] === v[col])
+        );
+        if (existingIdx >= 0) {
+          current[existingIdx] = {
+            ...current[existingIdx],
+            ...v,
+            updated_at: new Date().toISOString(),
+          };
+          return current[existingIdx];
+        }
+      }
       const row = { id: uuidv4(), created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...v };
       current.push(row);
       return row;
@@ -325,6 +412,29 @@ class MockClient {
   }
 
   removeChannel() {}
+
+  rpc(fn: string, params?: Record<string, unknown>) {
+    if (fn === "resolve_company_for_email") {
+      const workspaceId = params?.p_workspace_id as string | undefined;
+      const email = (params?.p_email as string | undefined)?.toLowerCase() ?? "";
+      const domain = email.includes("@") ? email.split("@")[1] : "";
+      const domains = getTable("company_domains");
+      const match = domains.find(
+        (row) =>
+          row.workspace_id === workspaceId &&
+          String(row.domain ?? "").toLowerCase() === domain
+      );
+      return Promise.resolve({
+        data: (match?.company_id as string | null) ?? null,
+        error: null,
+      });
+    }
+
+    return Promise.resolve({
+      data: null,
+      error: null,
+    });
+  }
 }
 
 let mockInstance: MockClient | null = null;

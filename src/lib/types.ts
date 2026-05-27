@@ -3,6 +3,11 @@ import { Database } from "./database.types";
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
 export type Workspace = Database["public"]["Tables"]["workspaces"]["Row"];
 export type WorkspaceMember = Database["public"]["Tables"]["workspace_members"]["Row"];
+export type Company = Database["public"]["Tables"]["companies"]["Row"];
+export type Component = Database["public"]["Tables"]["components"]["Row"];
+export type Status = Database["public"]["Tables"]["statuses"]["Row"];
+export type CompanyDomain = Database["public"]["Tables"]["company_domains"]["Row"];
+export type WorkspaceInvite = Database["public"]["Tables"]["workspace_invites"]["Row"];
 export type Category = Database["public"]["Tables"]["categories"]["Row"];
 export type Item = Database["public"]["Tables"]["items"]["Row"];
 export type Comment = Database["public"]["Tables"]["comments"]["Row"];
@@ -17,6 +22,8 @@ export interface WorkspaceWithMemberCount extends Workspace {
 
 export interface ItemWithDetails extends Item {
   category?: Category | null;
+  component?: Component | null;
+  owner_company?: Company | null;
   assignee?: Profile | null;
   creator?: Profile | null;
 }
@@ -33,7 +40,7 @@ export type ThreadEntry =
   | { type: "comment"; data: CommentWithAuthor }
   | { type: "activity"; data: ActivityLogWithAuthor };
 
-export const ITEM_STATUSES: ItemStatus[] = [
+export const DEFAULT_ITEM_STATUSES: string[] = [
   "New",
   "Acknowledged",
   "In progress",
@@ -43,7 +50,7 @@ export const ITEM_STATUSES: ItemStatus[] = [
   "Closed",
 ];
 
-export const STATUS_COLORS: Record<ItemStatus, string> = {
+export const STATUS_COLORS: Record<string, string> = {
   New: "bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300",
   Acknowledged: "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
   "In progress": "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
@@ -65,3 +72,5 @@ export const CATEGORY_COLORS = [
   "#f97316",
   "#6366f1",
 ];
+
+export const REPORTER_SOURCES = ["Client", "Internal", "Monitoring", "Support"] as const;

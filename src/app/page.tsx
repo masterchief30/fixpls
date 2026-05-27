@@ -1,41 +1,70 @@
 import Link from "next/link";
-import { buttonVariants } from "@/components/ui/button";
+
+function WarningTriangleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      aria-hidden="true"
+      className={className}
+      shapeRendering="geometricPrecision"
+    >
+      <path
+        d="M16 2.5L30 28.5H2L16 2.5Z"
+        fill="#FFE92E"
+        stroke="#6E6E6E"
+        strokeWidth="2"
+      />
+      <rect x="14.5" y="10" width="3" height="10" fill="#111111" rx="1" />
+      <rect x="14.5" y="22.5" width="3" height="3.5" fill="#111111" rx="1" />
+    </svg>
+  );
+}
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-900 via-zinc-900 to-slate-800 text-zinc-100">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-transparent"
-      />
-      <section className="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-6 py-16">
-        <div className="w-full max-w-3xl rounded-3xl border border-white/20 bg-zinc-800/75 p-8 text-center shadow-[0_24px_85px_-28px_rgba(2,6,23,0.9)] backdrop-blur-md md:p-12">
-          <h1 className="text-4xl font-semibold tracking-tight text-white md:text-6xl">
-            plsfix
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-base text-zinc-300 md:text-lg">
-            A clean place to collect bugs, feedback, and feature requests with
-            clients.
-          </p>
+    <main className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#121426] via-[#161c34] to-[#0c1022]">
+      <div className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(0deg,rgba(255,255,255,0.02),rgba(255,255,255,0.02)_1px,transparent_1px,transparent_4px)]" />
 
-          <div className="mt-10 flex items-center justify-center gap-3">
+      <div className="absolute left-6 top-6 hidden sm:flex">
+        <div className="flex w-20 flex-col items-center gap-1 text-center">
+          <WarningTriangleIcon className="h-9 w-9 drop-shadow-[1px_1px_0_rgba(0,0,0,0.55)]" />
+          <span className="bg-[#000080] px-1 text-[11px] text-white">
+            plsfix.exe
+          </span>
+        </div>
+      </div>
+
+      <section className="mx-auto flex min-h-screen w-full max-w-5xl items-center justify-center px-6 py-16">
+        <div className="w-full max-w-2xl border-2 border-[#d4d4d4] bg-[#c0c0c0] shadow-[8px_8px_0_#0d0d0d]">
+          <div className="flex items-center justify-between bg-[#000080] px-3 py-1">
+            <span className="text-sm font-bold tracking-tight text-white">
+              WARNING
+            </span>
+            <span className="grid h-5 w-5 place-items-center border border-[#8c8c8c] bg-[#c0c0c0] text-xs text-black shadow-[inset_-1px_-1px_0_#595959,inset_1px_1px_0_#ffffff]">
+              X
+            </span>
+          </div>
+
+          <div className="flex gap-4 bg-[#d4d0c8] p-6 text-black">
+            <WarningTriangleIcon className="h-10 w-10 shrink-0" />
+            <div className="space-y-2 pl-2">
+              <h1 className="text-2xl font-bold">plsfix</h1>
+              <p className="max-w-xl text-[15px] leading-6">
+                Fixing bugs never was easier.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-3 bg-[#d4d0c8] px-6 pb-6">
             <Link
               href="/login"
-              className={buttonVariants({
-                variant: "default",
-                className:
-                  "h-12 px-7 text-base !bg-zinc-100 !text-zinc-900 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:!bg-white hover:!text-zinc-900 hover:shadow-[0_10px_30px_-12px_rgba(255,255,255,0.8)]",
-              })}
+              className="inline-flex h-10 min-w-28 cursor-pointer items-center justify-center border border-[#7f7f7f] bg-[#c0c0c0] px-5 text-sm font-semibold text-black shadow-[inset_-1px_-1px_0_#4f4f4f,inset_1px_1px_0_#ffffff] transition hover:bg-[#cdcdcd] active:translate-y-px"
             >
               Log in
             </Link>
             <Link
               href="/signup"
-              className={buttonVariants({
-                variant: "outline",
-                className:
-                  "h-12 border-white/20 bg-white/5 px-7 text-base text-zinc-100 transition-all duration-200 ease-out hover:-translate-y-0.5 hover:scale-[1.02] hover:bg-white/12 hover:text-white hover:shadow-[0_10px_30px_-18px_rgba(255,255,255,0.35)]",
-              })}
+              className="inline-flex h-10 min-w-28 cursor-pointer items-center justify-center border border-[#7f7f7f] bg-[#c0c0c0] px-5 text-sm font-semibold text-black shadow-[inset_-1px_-1px_0_#4f4f4f,inset_1px_1px_0_#ffffff] transition hover:bg-[#cdcdcd] active:translate-y-px"
             >
               Sign up
             </Link>

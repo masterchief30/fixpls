@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DEFAULT_ITEM_STATUSES } from "@/lib/types";
 
 interface CreateWorkspaceDialogProps {
   open: boolean;
@@ -64,6 +65,47 @@ export function CreateWorkspaceDialog({
       setLoading(false);
       return;
     }
+
+    const { data: defaultCompany } = await supabase
+      .from("companies")
+      .insert({
+        workspace_id: workspace.id,
+        name: `${name.trim()} Team`,
+      })
+      .select()
+      .single();
+
+    if (defaultCompany?.id) {
+      await supabase
+        .from("workspaces")
+        .update({ default_owner_company_id: defaultCompany.id })
+        .eq("id", workspace.id);
+
+      await supabase
+        .from("workspace_members")
+        .update({ company_id: defaultCompany.id })
+        .eq("workspace_id", workspace.id)
+        .eq("user_id", user.id);
+    }
+
+    await supabase.from("categories").insert([
+      { workspace_id: workspace.id, name: "Bugs", color: "#ef4444" },
+      { workspace_id: workspace.id, name: "Feedback", color: "#3b82f6" },
+      { workspace_id: workspace.id, name: "Features", color: "#10b981" },
+    ]);
+
+    await supabase.from("components").insert([
+      { workspace_id: workspace.id, name: "Frontend" },
+      { workspace_id: workspace.id, name: "Backend" },
+    ]);
+
+    await supabase.from("statuses").insert(
+      DEFAULT_ITEM_STATUSES.map((statusName, index) => ({
+        workspace_id: workspace.id,
+        name: statusName,
+        sort_order: index + 1,
+      }))
+    );
 
     setName("");
     onOpenChange(false);

@@ -2,7 +2,16 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/app-shell";
 import { WorkspaceClient } from "@/components/workspace-detail/workspace-client";
-import { Category, ItemWithDetails, Profile, WorkspaceMember } from "@/lib/types";
+import {
+  Category,
+  Company,
+  CompanyDomain,
+  Component,
+  ItemWithDetails,
+  Profile,
+  Status,
+  WorkspaceMember,
+} from "@/lib/types";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -29,17 +38,49 @@ export default async function WorkspacePage({ params }: PageProps) {
     notFound();
   }
 
+  const { data: workspace } = await supabase
+    .from("workspaces")
+    .select("id, name, default_owner_company_id")
+    .eq("id", id)
+    .single();
+
   const { data: categories } = await supabase
     .from("categories")
     .select("*")
     .eq("workspace_id", id)
     .order("name");
 
+  const { data: companies } = await supabase
+    .from("companies")
+    .select("*")
+    .eq("workspace_id", id)
+    .order("name");
+
+  const { data: components } = await supabase
+    .from("components")
+    .select("*")
+    .eq("workspace_id", id)
+    .order("name");
+
+  const { data: statuses } = await supabase
+    .from("statuses")
+    .select("*")
+    .eq("workspace_id", id)
+    .order("sort_order");
+
+  const { data: companyDomains } = await supabase
+    .from("company_domains")
+    .select("*")
+    .eq("workspace_id", id)
+    .order("domain");
+
   const { data: items } = await supabase
     .from("items")
     .select(`
       *,
       category:category_id (*),
+      component:component_id (*),
+      owner_company:owner_company_id (*),
       assignee:assignee_id (*),
       creator:created_by (*)
     `)
@@ -57,10 +98,16 @@ export default async function WorkspacePage({ params }: PageProps) {
     .eq("workspace_id", id);
 
   return (
-    <AppShell backHref="/workspaces">
+    <AppShell backHref="/workspaces" flush>
       <WorkspaceClient
         workspaceId={id}
+        workspaceName={workspace?.name ?? "Workspace"}
+        workspaceDefaultOwnerCompanyId={workspace?.default_owner_company_id ?? null}
         initialCategories={(categories ?? []) as unknown as Category[]}
+        initialCompanies={(companies ?? []) as unknown as Company[]}
+        initialComponents={(components ?? []) as unknown as Component[]}
+        initialStatuses={(statuses ?? []) as unknown as Status[]}
+        initialCompanyDomains={(companyDomains ?? []) as unknown as CompanyDomain[]}
         initialItems={(items ?? []) as unknown as ItemWithDetails[]}
         initialMembers={(members ?? []) as unknown as (WorkspaceMember & { profile: Profile | null })[]}
         userRole={(membership as { role: string }).role as "admin" | "member"}
