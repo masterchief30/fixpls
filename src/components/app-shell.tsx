@@ -10,7 +10,7 @@ export function AppShell({ children, backHref, flush = false }: AppShellProps) {
   return (
     <div className="relative min-h-screen">
       <header
-        className={`sticky top-0 z-20 border-b border-white/10 bg-slate-900/70 backdrop-blur-md ${flush ? "px-0" : "px-4"}`}
+        className={`sticky top-0 z-20 border-b border-slate-800/70 bg-black ${flush ? "px-0" : "px-4"}`}
       >
         <div className={`flex h-14 items-center ${flush ? "pl-3" : ""}`}>
           {backHref ? (

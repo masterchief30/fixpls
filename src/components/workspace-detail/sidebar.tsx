@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, FolderPlus, Boxes, UserPlus, Flag, Building2 } from "lucide-react";
+import { Plus, FolderPlus, Boxes, UserPlus, Flag, Building2, Users } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -14,6 +14,7 @@ interface SidebarProps {
   onNewCompany: () => void;
   onNewStatus: () => void;
   onInvite: () => void;
+  onTeamMembers: () => void;
 }
 
 export function Sidebar({
@@ -24,6 +25,7 @@ export function Sidebar({
   onNewCompany,
   onNewStatus,
   onInvite,
+  onTeamMembers,
 }: SidebarProps) {
   const supabase = createClient();
   const router = useRouter();
@@ -37,7 +39,7 @@ export function Sidebar({
   };
 
   return (
-    <div className="flex w-60 flex-col border-r border-white/10 bg-gradient-to-b from-slate-900/70 to-slate-950/70">
+    <div className="flex w-60 flex-col border-r border-slate-800/70 bg-[#0b1220]">
       <div className="flex items-center justify-between px-4 py-3">
         <span className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           Actions
@@ -111,6 +113,15 @@ export function Sidebar({
       </div>
       <div className="flex-1" />
       <div className="px-2 py-3">
+        <Button
+          size="sm"
+          variant="outline"
+          className="mb-2 h-9 w-full justify-start text-sm"
+          onClick={onTeamMembers}
+        >
+          <Users className="mr-1.5 h-3.5 w-3.5" />
+          Team members
+        </Button>
         <Button
           size="sm"
           variant="destructive"

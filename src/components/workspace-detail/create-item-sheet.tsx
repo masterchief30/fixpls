@@ -28,6 +28,7 @@ import {
   Component,
   DEFAULT_ITEM_STATUSES,
   ItemStatus,
+  ItemWithDetails,
   Profile,
   REPORTER_SOURCES,
   Status,
@@ -43,7 +44,7 @@ interface CreateItemSheetProps {
   statuses: Status[];
   companies: Company[];
   members: (WorkspaceMember & { profile: Profile | null })[];
-  onCreated: () => void;
+  onCreated: (createdItem?: ItemWithDetails) => void | Promise<void>;
 }
 
 export function CreateItemSheet({
@@ -254,6 +255,22 @@ export function CreateItemSheet({
       return;
     }
 
+    const createdItem: ItemWithDetails = {
+      ...(item as ItemWithDetails),
+      category:
+        categories.find((category) => category.id === item.category_id) ?? null,
+      component:
+        components.find((component) => component.id === item.component_id) ?? null,
+      owner_company:
+        companies.find((company) => company.id === item.owner_company_id) ?? null,
+      assignee:
+        uniqueMembers.find((member) => member.user_id === item.assignee_id)?.profile ??
+        null,
+      creator:
+        uniqueMembers.find((member) => member.user_id === item.created_by)?.profile ??
+        null,
+    };
+
     if (selectedComponentIds.length > 0) {
       const { error: componentLinksError } = await supabase
         .from("item_component_links")
@@ -266,12 +283,7 @@ export function CreateItemSheet({
           { onConflict: "item_id,component_id" }
         );
       if (componentLinksError) {
-        setSubmitError(
-          `Item created, but menu component links failed: ${componentLinksError.message}`
-        );
-        setLoading(false);
-        onCreated();
-        return;
+        console.error("Item component links failed:", componentLinksError.message);
       }
     }
 
@@ -287,12 +299,7 @@ export function CreateItemSheet({
           { onConflict: "item_id,company_id" }
         );
       if (ownerLinksError) {
-        setSubmitError(
-          `Item created, but owner links failed: ${ownerLinksError.message}`
-        );
-        setLoading(false);
-        onCreated();
-        return;
+        console.error("Item owner links failed:", ownerLinksError.message);
       }
     }
 
@@ -314,9 +321,10 @@ export function CreateItemSheet({
     setAssigneeId("none");
     setShowComponentOptions(false);
     setShowOwnerOptions(false);
+    setSubmitError(null);
     setLoading(false);
     onOpenChange(false);
-    onCreated();
+    await onCreated(createdItem);
   };
 
   return (

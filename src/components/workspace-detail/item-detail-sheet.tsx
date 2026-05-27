@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { format } from "date-fns";
 import { createClient } from "@/lib/supabase/client";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -18,6 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { CommentThread } from "@/components/comment-thread";
 import {
   Category,
@@ -72,6 +76,10 @@ export function ItemDetailSheet({
   const [reporterEmail, setReporterEmail] = useState("");
   const [reporterSource, setReporterSource] =
     useState<(typeof REPORTER_SOURCES)[number]>("Client");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const uniqueMembers = useMemo(
     () =>
       members.filter(
@@ -119,25 +127,90 @@ export function ItemDetailSheet({
       : uniqueMembers.find((member) => member.user_id === assigneeValue)?.profile?.full_name ??
         uniqueMembers.find((member) => member.user_id === assigneeValue)?.profile?.email ??
         "Workspace member";
+  const creatorLabel =
+    item?.creator?.full_name ??
+    item?.creator?.email ??
+    uniqueMembers.find((member) => member.user_id === item?.created_by)?.profile?.full_name ??
+    uniqueMembers.find((member) => member.user_id === item?.created_by)?.profile?.email ??
+    "Unknown";
+  const formatDateTime = (value: string) => {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return format(parsed, "dd MMM yyyy HH:mm");
+  };
+  const latestActivity = useMemo(() => {
+    if (activities.length === 0) return null;
+    return activities.reduce((latest, current) =>
+      new Date(current.created_at).getTime() > new Date(latest.created_at).getTime()
+        ? current
+        : latest
+    );
+  }, [activities]);
+  const lastUpdatedByLabel =
+    latestActivity?.author?.full_name ??
+    latestActivity?.author?.email ??
+    creatorLabel;
 
   const fetchComments = useCallback(async () => {
     if (!item) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("comments")
-      .select(`*, author:user_id (*)`)
+      .select("*")
       .eq("item_id", item.id)
       .order("created_at", { ascending: true });
-    if (data) setComments(data as unknown as CommentWithAuthor[]);
+
+    if (error) {
+      console.error("Failed to fetch comments:", error.message);
+      return;
+    }
+
+    const rows = (data ?? []) as unknown as CommentWithAuthor[];
+    const userIds = Array.from(
+      new Set(rows.map((row) => row.user_id).filter((value): value is string => Boolean(value)))
+    );
+    const { data: profiles } =
+      userIds.length > 0
+        ? await supabase.from("profiles").select("*").in("id", userIds)
+        : { data: [] as Profile[] };
+    const safeProfiles = (profiles ?? []) as unknown as Profile[];
+    const profileById = new Map(safeProfiles.map((profile) => [profile.id, profile]));
+    setComments(
+      rows.map((row) => ({
+        ...row,
+        author: profileById.get(row.user_id) ?? null,
+      }))
+    );
   }, [supabase, item]);
 
   const fetchActivities = useCallback(async () => {
     if (!item) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("activity_log")
-      .select(`*, author:user_id (*)`)
+      .select("*")
       .eq("item_id", item.id)
       .order("created_at", { ascending: true });
-    if (data) setActivities(data as unknown as ActivityLogWithAuthor[]);
+
+    if (error) {
+      console.error("Failed to fetch activity log:", error.message);
+      return;
+    }
+
+    const rows = (data ?? []) as unknown as ActivityLogWithAuthor[];
+    const userIds = Array.from(
+      new Set(rows.map((row) => row.user_id).filter((value): value is string => Boolean(value)))
+    );
+    const { data: profiles } =
+      userIds.length > 0
+        ? await supabase.from("profiles").select("*").in("id", userIds)
+        : { data: [] as Profile[] };
+    const safeProfiles = (profiles ?? []) as unknown as Profile[];
+    const profileById = new Map(safeProfiles.map((profile) => [profile.id, profile]));
+    setActivities(
+      rows.map((row) => ({
+        ...row,
+        author: profileById.get(row.user_id) ?? null,
+      }))
+    );
   }, [supabase, item]);
 
   useEffect(() => {
@@ -371,12 +444,36 @@ export function ItemDetailSheet({
     fetchComments();
   };
 
+  const handleDeleteItem = async () => {
+    if (!item) return;
+    if (deleteConfirmText !== "DELETE") {
+      setDeleteError("Type DELETE exactly to confirm.");
+      return;
+    }
+    setDeleting(true);
+    setDeleteError(null);
+    const { error } = await supabase.from("items").delete().eq("id", item.id);
+    if (error) {
+      setDeleteError(error.message);
+      setDeleting(false);
+      return;
+    }
+    setDeleting(false);
+    setDeleteDialogOpen(false);
+    setDeleteConfirmText("");
+    onOpenChange(false);
+    onUpdated();
+  };
+
   if (!item) return null;
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="flex w-full flex-col sm:max-w-lg">
-        <SheetHeader className="space-y-4 pb-4">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[90vh] w-full flex-col overflow-hidden sm:max-w-4xl">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Item details</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pb-4">
           <div className="space-y-3">
             <input
               value={title}
@@ -501,8 +598,40 @@ export function ItemDetailSheet({
                 </Select>
               </div>
             </div>
+            <div className="grid grid-cols-1 gap-2 rounded-md border p-3 text-xs sm:grid-cols-4">
+              <div className="space-y-1">
+                <p className="text-muted-foreground">Creator</p>
+                <p className="font-medium text-foreground">{creatorLabel}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-muted-foreground">Created</p>
+                <p className="font-medium text-foreground">{formatDateTime(item.created_at)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-muted-foreground">Last updated</p>
+                <p className="font-medium text-foreground">{formatDateTime(item.updated_at)}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-muted-foreground">Last updated by</p>
+                <p className="font-medium text-foreground">{lastUpdatedByLabel}</p>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  setDeleteDialogOpen(true);
+                  setDeleteConfirmText("");
+                  setDeleteError(null);
+                }}
+              >
+                Delete item
+              </Button>
+            </div>
           </div>
-        </SheetHeader>
+        </div>
 
         <div className="flex-1 overflow-y-auto">
           <div className="space-y-6">
@@ -561,7 +690,59 @@ export function ItemDetailSheet({
             />
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={(nextOpen) => {
+          setDeleteDialogOpen(nextOpen);
+          if (!nextOpen) {
+            setDeleteConfirmText("");
+            setDeleteError(null);
+            setDeleting(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete item</DialogTitle>
+            <DialogDescription>
+              Delete this item permanently. Type DELETE to confirm.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="confirm-delete-item">Confirmation</Label>
+            <Input
+              id="confirm-delete-item"
+              value={deleteConfirmText}
+              onChange={(event) => setDeleteConfirmText(event.target.value)}
+              placeholder="DELETE"
+            />
+            {deleteError && <p className="text-sm text-red-500">{deleteError}</p>}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setDeleteConfirmText("");
+                setDeleteError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDeleteItem}
+              disabled={deleteConfirmText !== "DELETE" || deleting}
+            >
+              {deleting ? "Deleting..." : "Delete item"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Dialog>
   );
 }

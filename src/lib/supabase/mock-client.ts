@@ -239,7 +239,10 @@ class MockQueryBuilder {
     const fields = this.selectFields;
     const expanded = out.map((row) => {
       const copy = { ...row };
-      if (fields?.includes("category:category_id")) {
+      if (
+        fields?.includes("category:category_id") ||
+        fields?.includes("category:categories!items_category_id_fkey")
+      ) {
         const cats = getTable("categories");
         copy.category = cats.find((c) => c.id === row.category_id) ?? null;
       }
@@ -247,11 +250,17 @@ class MockQueryBuilder {
         const profs = getTable("profiles");
         copy.assignee = profs.find((p) => p.id === row.assignee_id) ?? null;
       }
-      if (fields?.includes("component:component_id")) {
+      if (
+        fields?.includes("component:component_id") ||
+        fields?.includes("component:components!items_component_id_fkey")
+      ) {
         const comps = getTable("components");
         copy.component = comps.find((cp) => cp.id === row.component_id) ?? null;
       }
-      if (fields?.includes("owner_company:owner_company_id")) {
+      if (
+        fields?.includes("owner_company:owner_company_id") ||
+        fields?.includes("owner_company:companies!items_owner_company_id_fkey")
+      ) {
         const companies = getTable("companies");
         copy.owner_company = companies.find((c) => c.id === row.owner_company_id) ?? null;
       }

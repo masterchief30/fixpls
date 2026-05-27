@@ -125,7 +125,7 @@
     @apply bg-background text-foreground;
   }
   .dark body {
-    @apply bg-gradient-to-br from-slate-900 via-zinc-900 to-slate-800;
+    background-color: #0a111f;
   }
   html {
     @apply font-sans;
