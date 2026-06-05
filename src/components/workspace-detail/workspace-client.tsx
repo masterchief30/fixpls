@@ -136,13 +136,14 @@ export function WorkspaceClient({
       return true;
     });
 
-    // Keep closed items at the bottom for easier active-work triage.
-    return filtered.sort((a, b) => {
-      const aClosed = a.status.trim().toLowerCase() === "closed";
-      const bClosed = b.status.trim().toLowerCase() === "closed";
-      if (aClosed === bClosed) return 0;
-      return aClosed ? 1 : -1;
-    });
+    const isClosed = (s: string) => s.trim().toLowerCase() === "closed";
+    const active = filtered.filter((item) => !isClosed(item.status));
+    const closed = filtered.filter((item) => isClosed(item.status));
+
+    active.sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    closed.sort((a, b) => (a.item_number ?? 0) - (b.item_number ?? 0));
+
+    return [...active, ...closed];
   }, [
     items,
     statusFilter,
@@ -168,7 +169,7 @@ export function WorkspaceClient({
         owner_company:companies!items_owner_company_id_fkey (*)
       `)
       .eq("workspace_id", workspaceId)
-      .order("updated_at", { ascending: false });
+      .order("sort_order", { ascending: true });
 
     if (error) {
       console.error("Failed to fetch items with embedded relations:", error.message);
@@ -176,7 +177,7 @@ export function WorkspaceClient({
         .from("items")
         .select("*")
         .eq("workspace_id", workspaceId)
-        .order("updated_at", { ascending: false });
+        .order("sort_order", { ascending: true });
 
       if (fallbackError) {
         console.error("Failed to fetch items fallback:", fallbackError.message);
@@ -347,6 +348,39 @@ export function WorkspaceClient({
     [items, supabase, fetchItems]
   );
 
+  const handleReorder = useCallback(
+    async (itemId: string, direction: "up" | "down") => {
+      const isClosed = (s: string) => s.trim().toLowerCase() === "closed";
+      const activeItems = items
+        .filter((item) => !isClosed(item.status))
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+      const idx = activeItems.findIndex((item) => item.id === itemId);
+      if (idx === -1) return;
+      const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (swapIdx < 0 || swapIdx >= activeItems.length) return;
+
+      const currentItem = activeItems[idx];
+      const swapItem = activeItems[swapIdx];
+      const currentOrder = currentItem.sort_order ?? 0;
+      const swapOrder = swapItem.sort_order ?? 0;
+
+      setItems((previous) =>
+        previous.map((item) => {
+          if (item.id === currentItem.id) return { ...item, sort_order: swapOrder };
+          if (item.id === swapItem.id) return { ...item, sort_order: currentOrder };
+          return item;
+        })
+      );
+
+      await Promise.all([
+        supabase.from("items").update({ sort_order: swapOrder }).eq("id", currentItem.id),
+        supabase.from("items").update({ sort_order: currentOrder }).eq("id", swapItem.id),
+      ]);
+    },
+    [items, supabase]
+  );
+
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
@@ -502,6 +536,7 @@ export function WorkspaceClient({
           statusOptions={statusOptions}
           onItemClick={setSelectedItemId}
           onStatusChange={handleTableStatusChange}
+          onReorder={handleReorder}
         />
       </div>
 

@@ -154,13 +154,20 @@ export function CreateItemSheet({
       setStatus(statusOptions[0] ?? "New");
       setCategoryId("none");
       setComponentIds([]);
-      setAssigneeId("none");
       setSubmitError(null);
       setShowComponentOptions(false);
       setShowOwnerOptions(false);
       hydrateDefaults();
+
+      // Pre-select the logged-in user as assignee
+      supabase.auth.getUser().then(({ data }: { data: { user: { id: string } | null } }) => {
+        if (data.user) {
+          const match = members.find((m) => m.user_id === data.user!.id);
+          setAssigneeId(match ? match.user_id : "none");
+        }
+      });
     }
-  }, [open, preferredOwnerCompanyId, statusOptions, supabase]);
+  }, [open, preferredOwnerCompanyId, statusOptions, supabase, members]);
 
   useEffect(() => {
     if (categoryId !== "none" && !categories.some((category) => category.id === categoryId)) {

@@ -207,6 +207,8 @@ export interface Database {
           created_by: string;
           created_at: string;
           updated_at: string;
+          item_number: number;
+          sort_order: number;
         };
         Insert: {
           id?: string;
@@ -224,6 +226,8 @@ export interface Database {
           created_by: string;
           created_at?: string;
           updated_at?: string;
+          item_number?: number;
+          sort_order?: number;
         };
         Update: {
           id?: string;
@@ -241,6 +245,8 @@ export interface Database {
           created_by?: string;
           created_at?: string;
           updated_at?: string;
+          item_number?: number;
+          sort_order?: number;
         };
       };
       item_component_links: {

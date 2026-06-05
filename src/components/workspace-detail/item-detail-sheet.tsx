@@ -127,11 +127,14 @@ export function ItemDetailSheet({
       : uniqueMembers.find((member) => member.user_id === assigneeValue)?.profile?.full_name ??
         uniqueMembers.find((member) => member.user_id === assigneeValue)?.profile?.email ??
         "Workspace member";
-  const creatorLabel =
+  const rawCreatorName =
     item?.creator?.full_name ??
-    item?.creator?.email ??
     uniqueMembers.find((member) => member.user_id === item?.created_by)?.profile?.full_name ??
-    uniqueMembers.find((member) => member.user_id === item?.created_by)?.profile?.email ??
+    null;
+  const creatorLabel = rawCreatorName
+    ? rawCreatorName.split(" ")[0]
+    : item?.creator?.email?.split("@")[0] ??
+    uniqueMembers.find((member) => member.user_id === item?.created_by)?.profile?.email?.split("@")[0] ??
     "Unknown";
   const formatDateTime = (value: string) => {
     const parsed = new Date(value);
@@ -475,13 +478,20 @@ export function ItemDetailSheet({
         </DialogHeader>
         <div className="space-y-4 pb-4">
           <div className="space-y-3">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={handleTitleBlur}
-              onKeyDown={(e) => e.key === "Enter" && handleTitleBlur()}
-              className="w-full bg-transparent text-lg font-semibold outline-none placeholder:text-muted-foreground"
-            />
+            <div className="flex items-center gap-3">
+              {item?.item_number != null && (
+                <span className="shrink-0 rounded bg-slate-800 px-2 py-0.5 font-mono text-xs text-slate-400">
+                  #{String(item.item_number).padStart(3, "0")}
+                </span>
+              )}
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={handleTitleBlur}
+                onKeyDown={(e) => e.key === "Enter" && handleTitleBlur()}
+                className="w-full bg-transparent text-lg font-semibold outline-none placeholder:text-muted-foreground"
+              />
+            </div>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Status</span>

@@ -103,6 +103,8 @@ function seed() {
       created_by: DEMO_USER_ID,
       created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
       updated_at: new Date(Date.now() - 3600000).toISOString(),
+      item_number: 1,
+      sort_order: 1,
     },
     {
       id: item2,
@@ -120,6 +122,8 @@ function seed() {
       created_by: DEMO_USER_ID,
       created_at: new Date(Date.now() - 86400000).toISOString(),
       updated_at: new Date(Date.now() - 86400000).toISOString(),
+      item_number: 2,
+      sort_order: 2,
     },
   ]);
 
